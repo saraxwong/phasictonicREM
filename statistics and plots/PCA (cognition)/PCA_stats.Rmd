@@ -1,0 +1,530 @@
+---
+title: "PCA (cognition) stats"
+output: html_notebook
+---
+# import functions
+```{r}
+library(lmerTest)
+library(emmeans)
+library(lme4)
+library(tidyverse)
+library(broom)
+library(ggpubr)
+library(ggprism)
+library(nplyr)
+library(effects)
+library(corrplot)
+library(ppcor)
+library(ordinal)
+library(dplyr)
+library(MuMIn)
+```
+
+# Load data
+```{r}
+df_dim <- read_csv("data/for paper/PCA/df_dim.csv", show_col_types = FALSE)
+
+cols <- c("participant", "gender", "condition", "test_no", "day", "order", "dimension", "channel")
+df_dim <- df_dim %>% mutate_at(cols, factor) 
+
+df_dim <- df_dim %>% 
+  group_by(dimension) %>% 
+  nest() 
+
+df_dim1 <- pluck(df_dim$data[[1]])
+df_dim2 <- pluck(df_dim$data[[2]])
+df_dim3 <- pluck(df_dim$data[[3]])
+df_dim4 <- pluck(df_dim$data[[4]])
+```
+
+## Changes in PCA scores (z scored and ranked to achieve normal distribution) over the week (Fig 5)
+#1. lme
+```{r}
+fit.dim1<- lmer(dimvalue_z ~ condition:day + day + test_no + order + base_dimvalue_z + (1|participant), data = df_dim1)
+stats_dim1 <- anova(fit.dim1)
+
+fit.dim2<- lmer(dimvalue_z ~ condition:day + day + test_no + order + base_dimvalue_z + (1|participant), data = df_dim2)
+stats_dim2 <- anova(fit.dim2)
+
+fit.dim3<- lmer(dimvalue_z ~ condition:day + day + test_no + order + base_dimvalue_z + (1|participant), data = df_dim3)
+stats_dim3 <- anova(fit.dim3)
+
+fit.dim4<- lmer(dimvalue_z ~ condition:day + day + test_no + order + base_dimvalue_z + (1|participant), data = df_dim4)
+stats_dim4 <- anova(fit.dim4)
+
+# estimated means
+dim1_esmmeans <- estimate_means(fit.dim1 , by = c("day", "condition"))
+dim2_esmmeans <- estimate_means(fit.dim2 , by = c("day", "condition"))
+dim3_esmmeans <- estimate_means(fit.dim3 , by = c("day", "condition"))
+dim4_esmmeans <- estimate_means(fit.dim4 , by = c("day", "condition"))
+```
+#2. posthoc
+```{r}
+# comparing between conditions for each day (in paper)
+pairs(emmeans(fit.dim2, ~day:condition, by="day", p.adjust = "tukey"))
+# comparing to baseline 
+contrast((emmeans(fit.dim4, ~ day:condition)), method = "trt.vs.ctrl", ref = 2, adjust = "sidak")
+```
+#3. Plot
+```{r}
+plot.dim1 <- ggplot(dim1_esmmeans,  aes(x = day, y = Mean, linetype=condition, shape=condition, group=condition)) + 
+  scale_shape_manual(values = c(16,21)) +
+  geom_point(position = position_dodge(width=0.2), size=2) +
+  geom_line(aes(group=condition), linewidth=0.2) +
+  geom_errorbar(aes(x=day, y=Mean, ymin=Mean-SE, ymax=Mean+SE), linetype=1, width=0.4, position = position_dodge(0.2), lwd=0.3) +
+  geom_point(aes(shape=condition),fill="white", size=2, position = position_dodge(0.2)) +
+  theme_prism(base_size =10, base_fontface="plain", base_line_size=0.2) +
+  xlab("day") + ylab("z-scored") +
+  scale_y_continuous(limits = c(-0.65, 0.7), breaks = seq(-0.65, 0.7,0.15), expand = c(0, NA))+
+  ggtitle("effort / \nworking memory inaccuracy") +
+  theme(legend.position="bottom") +
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6")) 
+```
+
+
+## Baseline: associations with all periodic and aperiodic components (Table S3)
+#1. lmes
+#NB run #1 Dim1 followed by #2 Dim1 table, then repeat with Dim2-Dim4
+```{r}
+df_baseline <- df_dim %>% 
+  filter(dimension=="Dim1") %>% # choose dimension
+  filter(day=="2")  #baseline
+
+# duration ----
+fit.duration_NREM <- lmer(dimvalue_z ~ scale(NREM_perc) + test_no  + order + (1|participant), data=df_baseline)
+fit.duration_NREM_summary <- as.data.frame(coef(summary(fit.duration_NREM))) 
+NREM_coeff <- fit.duration_NREM_summary[2,] 
+NREM_confint <- as.data.frame(t(confint(fit.duration_NREM)[4,]))
+NREM_coeff <- cbind(NREM_coeff,NREM_confint)
+
+fit.duration_phasic <- lmer(dimvalue_z ~ scale(phasic_perc) + test_no  + order + (1|participant), data=df_baseline)
+fit.duration_phasic_summary <- as.data.frame(coef(summary(fit.duration_phasic))) 
+phasic_coeff <- fit.duration_phasic_summary[2,] 
+phasic_confint <- as.data.frame(t(confint(fit.duration_phasic)[4,]))
+phasic_coeff <- cbind(phasic_coeff,phasic_confint)
+
+fit.duration_tonic <- lmer(dimvalue_z ~ scale(tonic_perc) + test_no  + order + (1|participant), data=df_baseline)
+fit.duration_tonic_summary <- as.data.frame(coef(summary(fit.duration_tonic))) 
+tonic_coeff <- fit.duration_tonic_summary[2,] 
+tonic_confint <- as.data.frame(t(confint(fit.duration_tonic)[4,]))
+tonic_coeff <- cbind(tonic_coeff,tonic_confint)
+
+fit.duration_REM <- lmer(dimvalue_z ~ scale(REM_perc) + test_no  + order + (1|participant), data=df_baseline)
+fit.duration_REM_summary <- as.data.frame(coef(summary(fit.duration_REM))) 
+REM_coeff <- fit.duration_REM_summary[2,] 
+REM_confint <- as.data.frame(t(confint(fit.duration_REM)[4,]))
+REM_coeff <- cbind(REM_coeff,REM_confint)
+
+# oscillations ----
+# phasic
+fit.IAPF_phasic <- lmer(dimvalue_z ~ scale(IAPF_phasic) +  scale(tst) + test_no + channel + order + (1|participant), data=df_baseline)
+fit.IAPF_phasic_summary <- as.data.frame(coef(summary(fit.IAPF_phasic))) 
+IAPF_phasic_coeff <- fit.IAPF_phasic_summary[c(2),]
+IAPF_phasic_confint <- as.data.frame(t(confint(fit.IAPF_phasic)[4,]))
+IAPF_phasic_coeff <- cbind(IAPF_phasic_coeff,IAPF_phasic_confint)
+
+fit.densityalpha_phasic <- lmer(dimvalue_z ~ scale(densityalpha_phasic) + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.densityalpha_phasic_summary <- as.data.frame(coef(summary(fit.densityalpha_phasic))) 
+densityalpha_phasic_coeff <- fit.densityalpha_phasic_summary[c(2),]
+densityalpha_phasic_confint <- as.data.frame(t(confint(fit.densityalpha_phasic)[4,]))
+densityalpha_phasic_coeff <- cbind(densityalpha_phasic_coeff,densityalpha_phasic_confint)
+
+fit.densitytheta_phasic <- lmer(scale(dimvalue_z) ~ scale(densitytheta_phasic) + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.densitytheta_phasic_summary <- as.data.frame(coef(summary(fit.densitytheta_phasic))) 
+densitytheta_phasic_coeff <- fit.densitytheta_phasic_summary[c(2),]
+densitytheta_phasic_confint <- as.data.frame(t(confint(fit.densitytheta_phasic)[4,]))
+densitytheta_phasic_coeff <- cbind(densitytheta_phasic_coeff,densitytheta_phasic_confint)
+
+fit.snralpha_phasic <- lmer(dimvalue_z ~ scale(snralpha_phasic)  + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.snralpha_phasic_summary <- as.data.frame(coef(summary(fit.snralpha_phasic))) 
+snralpha_phasic_coeff <- fit.snralpha_phasic_summary[c(2),]
+snralpha_phasic_confint <- as.data.frame(t(confint(fit.snralpha_phasic)[4,]))
+snralpha_phasic_coeff <- cbind(snralpha_phasic_coeff,snralpha_phasic_confint)
+
+fit.snrtheta_phasic <- lmer(dimvalue_z ~ scale(snrtheta_phasic) + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.snrtheta_phasic_summary <- as.data.frame(coef(summary(fit.snrtheta_phasic))) 
+snrtheta_phasic_coeff <- fit.snrtheta_phasic_summary[c(2),]
+snrtheta_phasic_confint <- as.data.frame(t(confint(fit.snrtheta_phasic)[4,]))
+snrtheta_phasic_coeff <- cbind(snrtheta_phasic_coeff,snrtheta_phasic_confint)
+
+#
+fit.IAPF_tonic <- lmer(dimvalue_z ~ scale(IAPF_tonic) + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.IAPF_tonic_summary <- as.data.frame(coef(summary(fit.IAPF_tonic))) 
+IAPF_tonic_coeff <- fit.IAPF_tonic_summary[c(2),]
+IAPF_tonic_confint <- as.data.frame(t(confint(fit.IAPF_tonic)[4,]))
+IAPF_tonic_coeff <- cbind(IAPF_tonic_coeff,IAPF_tonic_confint)
+
+fit.densityalpha_tonic <- lmer(dimvalue_z ~ scale(densityalpha_tonic)  + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.densityalpha_tonic_summary <- as.data.frame(coef(summary(fit.densityalpha_tonic))) 
+densityalpha_tonic_coeff <- fit.densityalpha_tonic_summary[c(2),]
+densityalpha_tonic_confint <- as.data.frame(t(confint(fit.densityalpha_tonic)[4,]))
+densityalpha_tonic_coeff <- cbind(densityalpha_tonic_coeff,densityalpha_tonic_confint)
+
+fit.densitytheta_tonic <- lmer(dimvalue_z ~ scale(densitytheta_tonic) +  test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.densitytheta_tonic_summary <- as.data.frame(coef(summary(fit.densitytheta_tonic))) 
+densitytheta_tonic_coeff <- fit.densitytheta_tonic_summary[c(2),]
+densitytheta_tonic_confint <- as.data.frame(t(confint(fit.densitytheta_tonic)[4,]))
+densitytheta_tonic_coeff <- cbind(densitytheta_tonic_coeff,densitytheta_tonic_confint)
+
+fit.snralpha_tonic <- lmer(dimvalue_z ~ scale(snralpha_tonic)  + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.snralpha_tonic_summary <- as.data.frame(coef(summary(fit.snralpha_tonic))) 
+snralpha_tonic_coeff <- fit.snralpha_tonic_summary[c(2),]
+snralpha_tonic_confint <- as.data.frame(t(confint(fit.snralpha_tonic)[4,]))
+snralpha_tonic_coeff <- cbind(snralpha_tonic_coeff,snralpha_tonic_confint)
+
+fit.snrtheta_tonic <- lmer(dimvalue_z ~ scale(snrtheta_tonic)  + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.snrtheta_tonic_summary <- as.data.frame(coef(summary(fit.snrtheta_tonic))) 
+snrtheta_tonic_coeff <- fit.snrtheta_tonic_summary[c(2),]
+snrtheta_tonic_confint <- as.data.frame(t(confint(fit.snrtheta_tonic)[4,]))
+snrtheta_tonic_coeff <- cbind(snrtheta_tonic_coeff,snrtheta_tonic_confint)
+
+#aperiodic ----
+fit.exp30to45_phasic <- lmer(dimvalue_z ~ scale(exp30to45_phasic) +  test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.exp30to45_phasic_summary <- as.data.frame(coef(summary(fit.exp30to45_phasic))) 
+exp30to45_phasic_coeff <- fit.exp30to45_phasic_summary[c(2),]
+exp30to45_phasic_confint <- as.data.frame(t(confint(fit.exp30to45_phasic)[4,]))
+exp30to45_phasic_coeff <- cbind(exp30to45_phasic_coeff,exp30to45_phasic_confint)
+
+fit.exp30to45_tonic <- lmer(dimvalue_z ~ scale(exp30to45_tonic) +  + test_no + scale(tst) + channel + order + (1|participant), data=df_baseline)
+fit.exp30to45_tonic_summary <- as.data.frame(coef(summary(fit.exp30to45_tonic))) 
+exp30to45_tonic_coeff <- fit.exp30to45_tonic_summary[c(2),]
+exp30to45_tonic_confint <- as.data.frame(t(confint(fit.exp30to45_tonic)[4,]))
+exp30to45_tonic_coeff <- cbind(exp30to45_tonic_coeff,exp30to45_tonic_confint)
+```
+#2. create table for each dimension
+```{r}
+# Dim 1 ----
+results_dimension <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff,exp30to45_tonic_coeff) 
+colnames(results_dimension)[5] <- "pvalue"
+colnames(results_dimension)[6] <- "confint_start"
+colnames(results_dimension)[7] <- "confint_end"
+
+dimension1 <- results_dimension %>%
+  mutate(across(1:7, as.numeric)) %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+dimension1$confint <- paste(dimension1$confint_start, dimension1$confint_end, sep=",")
+
+dimension1 <- dimension1 %>% 
+  rownames_to_column("row_names") 
+ dimension1$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  dimension1$row_names)
+ dimension1$dimension <- rep("Dimension 1", 16) 
+ 
+ # Dim 2----
+results_dimension <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff,exp30to45_tonic_coeff) 
+colnames(results_dimension)[5] <- "pvalue"
+colnames(results_dimension)[6] <- "confint_start"
+colnames(results_dimension)[7] <- "confint_end"
+
+dimension2 <- results_dimension %>%
+  mutate(across(1:7, as.numeric)) %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+dimension2$confint <- paste(dimension2$confint_start, dimension2$confint_end, sep=",")
+
+dimension2 <- dimension2 %>% 
+  rownames_to_column("row_names") 
+ dimension2$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  dimension1$row_names)
+ dimension2$dimension <- rep("Dimension 2", 16) 
+ 
+ # Dim 3----
+results_dimension <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff,exp30to45_tonic_coeff) 
+colnames(results_dimension)[5] <- "pvalue"
+colnames(results_dimension)[6] <- "confint_start"
+colnames(results_dimension)[7] <- "confint_end"
+
+dimension3 <- results_dimension %>%
+  mutate(across(1:7, as.numeric)) %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+dimension3$confint <- paste(dimension3$confint_start, dimension3$confint_end, sep=",")
+
+dimension3 <- dimension3 %>% 
+  rownames_to_column("row_names") 
+ dimension3$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  dimension1$row_names)
+ dimension3$dimension <- rep("Dimension 3", 16) 
+ 
+ # Dim 4----
+results_dimension <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff,exp30to45_tonic_coeff) 
+colnames(results_dimension)[5] <- "pvalue"
+colnames(results_dimension)[6] <- "confint_start"
+colnames(results_dimension)[7] <- "confint_end"
+
+dimension4 <- results_dimension %>%
+  mutate(across(1:7, as.numeric)) %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+dimension4$confint <- paste(dimension4$confint_start, dimension4$confint_end, sep=",")
+
+dimension4 <- dimension4 %>% 
+  rownames_to_column("row_names") 
+ dimension4$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  dimension4$row_names)
+ dimension4$dimension <- rep("Dimension 4", 16) 
+```
+#3. combine all dimension results into one and create table
+```{r}
+my_order <- c("NREM_perc", "REM_perc", "phasic_perc", "tonic_perc", "IAPF_phasic", "densityalpha_phasic", "snralpha_phasic", "densitytheta_phasic", "snrtheta_phasic", "IAPF_tonic", "densityalpha_tonic", "snralpha_tonic", "densitytheta_tonic", "snrtheta_tonic", "exp30to45_phasic", "exp30to45_tonic")
+
+dimension_results_adj <- rbind(dimension1, dimension2, dimension3, dimension4) %>% 
+  mutate(adj_pvalue = p.adjust(pvalue, method="fdr"))  %>%
+  relocate(adj_pvalue, .after = pvalue)  %>%
+  mutate(across(2:9, as.numeric)) %>% 
+  mutate(across(2:9, ~ format(round(.x, 4), nsmall = 4)))  %>%
+  mutate(row_names = factor(row_names, levels=my_order)) %>% 
+  arrange(row_names)
+dimension_results_adj$dimension <- as.factor(dimension_results_adj$dimension)
+
+# Generate table 
+library(knitr)
+library(kableExtra)
+
+dim1_table <- dimension_results_adj %>% 
+  filter(dimension == "Dimension 1") %>% 
+  dplyr::select(!c(5,8,9,11)) %>% 
+  kable("html", digits=4, caption = "Dimension 1 for baseline") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+
+dim2_table <- dimension_results_adj %>% 
+  filter(dimension == "Dimension 2") %>% 
+  dplyr::select(!c(5,8,9,11)) %>% 
+  kable("html", digits=4, caption = "Dimension 2 for baseline") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+
+dim3_table <- dimension_results_adj %>% 
+  filter(dimension == "Dimension 3") %>% 
+  dplyr::select(!c(5,8,9,11)) %>% 
+  kable("html", digits=4, caption = "Dimension 3 for baseline") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+
+dim4_table <- dimension_results_adj %>% 
+  filter(dimension == "Dimension 4") %>% 
+  dplyr::select(!c(5,8,9,11)) %>% 
+  kable("html", digits=4, caption = "Dimension 4 for baseline") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+  
+```
+
+
+## Week: (Fig5)
+#Load data
+```{r}
+df_dim_week <- read_csv("data/for paper/PCA/df_dim_week.csv", show_col_types = FALSE)
+
+cols <- c("participant", "gender", "condition", "test_no", "day", "order", "dimension", "channel")
+df_dim_week <- df_dim_week %>% mutate_at(cols, factor) 
+```
+#1. lmes
+#NB run #1 Dim1 followed by #2 Dim1 table, then repeat with Dim2-Dim4
+```{r}
+df_dim <- df_dim_week %>%  filter(dimension=="dim1")
+
+# duration ----
+fit.duration_NREM <- lmer(dimvalue_z ~ scale(NREM_perc) + scale(NREM_perc_baseline) + base_dimvalue_z + condition:night + night+test_no  + order + (1|participant), data=df_dim)
+fit.duration_NREM_summary <- as.data.frame(coef(summary(fit.duration_NREM))) 
+
+fit.duration_REM <- lmer(dimvalue_z ~ scale(REM_perc) + scale(REM_perc_baseline) + base_dimvalue_z + condition:night + night+test_no  + order + (1|participant), data=df_dim)
+fit.duration_REM_summary <- as.data.frame(coef(summary(fit.duration_REM))) 
+
+fit.duration_phasic <- lmer(dimvalue_z ~ scale(phasic_perc) + scale(phasic_perc_baseline) + base_dimvalue_z + condition:night + night + test_no  + order + (1|participant), data=df_dim)
+fit.duration_phasic_summary <- as.data.frame(coef(summary(fit.duration_phasic))) 
+
+fit.duration_tonic <- lmer(dimvalue_z ~ scale(tonic_perc) + scale(tonic_perc_baseline) + base_dimvalue_z + condition:night + night+test_no  + order + (1|participant), data=df_dim)
+fit.duration_tonic_summary <- as.data.frame(coef(summary(fit.duration_tonic))) 
+
+# oscillations ----
+fit.IAPF_phasic <- lmer(dimvalue_z ~ scale(IAPF_phasic) + scale(IAPF_phasic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.IAPF_phasic_summary <- as.data.frame(coef(summary(fit.IAPF_phasic))) 
+
+
+fit.densityalpha_phasic <- lmer(dimvalue_z ~ scale(densityalpha_phasic) + scale(densityalpha_phasic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.densityalpha_phasic_summary <- as.data.frame(coef(summary(fit.densityalpha_phasic))) 
+
+fit.densitytheta_phasic <- lmer(dimvalue_z ~ scale(densitytheta_phasic) + scale(densitytheta_phasic_baseline) + scale(base_dimvalue_z) + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.densitytheta_phasic_summary <- as.data.frame(coef(summary(fit.densitytheta_phasic))) 
+
+fit.snralpha_phasic <- lmer(dimvalue_z ~ scale(snralpha_phasic) + scale(snralpha_phasic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.snralpha_phasic_summary <- as.data.frame(coef(summary(fit.snralpha_phasic))) 
+
+fit.snrtheta_phasic <- lmer(dimvalue_z ~ scale(snrtheta_phasic) + scale(snrtheta_phasic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.snrtheta_phasic_summary <- as.data.frame(coef(summary(fit.snrtheta_phasic))) 
+
+#
+fit.IAPF_tonic <- lmer(dimvalue_z ~ scale(IAPF_tonic) + scale(IAPF_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.IAPF_tonic_summary <- as.data.frame(coef(summary(fit.IAPF_tonic))) 
+
+fit.densityalpha_tonic <- lmer(dimvalue_z ~ scale(densityalpha_tonic) + scale(densityalpha_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.densityalpha_tonic_summary <- as.data.frame(coef(summary(fit.densityalpha_tonic))) 
+
+fit.densitytheta_tonic <- lmer(dimvalue_z ~ scale(densitytheta_tonic) + scale(densitytheta_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.densitytheta_tonic_summary <- as.data.frame(coef(summary(fit.densitytheta_tonic))) 
+
+fit.snralpha_tonic <- lmer(dimvalue_z ~ scale(snralpha_tonic) + scale(snralpha_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.snralpha_tonic_summary <- as.data.frame(coef(summary(fit.snralpha_tonic))) 
+
+fit.snrtheta_tonic <- lmer(dimvalue_z ~ scale(snrtheta_tonic) + scale(snrtheta_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.snrtheta_tonic_summary <- as.data.frame(coef(summary(fit.snrtheta_tonic))) 
+
+# aperiodic ----
+fit.exp30to45_phasic <- lmer(dimvalue_z ~ scale(exp30to45_phasic) + scale(exp30to45_phasic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.exp30to45_phasic_summary <- as.data.frame(coef(summary(fit.exp30to45_phasic)))
+
+fit.exp30to45_tonic <- lmer(dimvalue_z ~ scale(exp30to45_tonic) + scale(exp30to45_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+fit.exp30to45_tonic_summary <- as.data.frame(coef(summary(fit.exp30to45_tonic))) 
+```
+#2. create table for each dimension
+```{r}
+# Dimension 1 ----
+results_week_dim1 <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff, exp30to45_tonic_coeff) 
+colnames(results_week_dim1)[5] <- "pvalue" 
+
+results_week_dim1 <- results_week_dim1 %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+results_week_dim1 <- results_week_dim1 %>% 
+  rownames_to_column("row_names")
+results_week_dim1$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  results_week_dim1$row_names)
+
+results_week_dim1$dimension <- rep("Dimension 1", 16)
+
+# Dimension 2 ----
+results_week_dim2 <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff, exp30to45_tonic_coeff) 
+colnames(results_week_dim2)[5] <- "pvalue" 
+
+results_week_dim2 <- results_week_dim2 %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+results_week_dim2 <- results_week_dim2 %>% 
+  rownames_to_column("row_names") 
+results_week_dim2$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  results_week_dim2$row_names)
+
+results_week_dim2$dimension <- rep("Dimension 2", 16)
+
+# Dimension 3 ----
+results_week_dim3 <-rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff, exp30to45_tonic_coeff)
+colnames(results_week_dim3)[5] <- "pvalue" 
+
+results_week_dim3 <- results_week_dim3 %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+results_week_dim3 <- results_week_dim3 %>% 
+  rownames_to_column("row_names") 
+results_week_dim3$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  results_week_dim3$row_names)
+
+results_week_dim3$dimension <- rep("Dimension 3", 16)
+
+# Dimension 4 ----
+results_week_dim4 <- rbind(phasic_coeff, tonic_coeff, REM_coeff, NREM_coeff, IAPF_phasic_coeff, densityalpha_phasic_coeff, densitytheta_phasic_coeff, snralpha_phasic_coeff, snrtheta_phasic_coeff,IAPF_tonic_coeff, densityalpha_tonic_coeff, densitytheta_tonic_coeff, snralpha_tonic_coeff, snrtheta_tonic_coeff,exp30to45_phasic_coeff, exp30to45_tonic_coeff)
+colnames(results_week_dim4)[5] <- "pvalue" 
+
+results_week_dim4 <- results_week_dim4 %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 4), nsmall = 4)))
+
+results_week_dim4 <- results_week_dim4 %>% 
+  rownames_to_column("row_names") 
+results_week_dim4$row_names <- gsub("scale\\(([^)]+)\\)", "\\1",  results_week_dim4$row_names)
+
+results_week_dim4$dimension <- rep("Dimension 4", 16)
+```
+#3. Plot
+```{r}
+# Plot masked results 
+results_week_dim_masked <- rbind(results_week_dim1, results_week_dim2,results_week_dim3,results_week_dim4) %>% 
+  filter(row_names %in% c("phasic_perc", "tonic_perc", "NREM_perc", "REM_perc",
+                          "snralpha_tonic", "snralpha_phasic","densitytheta_tonic",  "densitytheta_phasic", "exp30to45_phasic", "exp30to45_tonic", "IAPF_phasic", "IAPF_tonic"))  %>% 
+  mutate(adj_pvalue = p.adjust(pvalue, method="fdr")) %>% 
+    mutate(Estimate = ifelse(abs(adj_pvalue) < 0.05, Estimate, NaN)) 
+
+results_week_dim_masked$sig <- ifelse(
+  results_week_dim_masked$adj_pvalue < 0.001, "***", 
+  ifelse(results_week_dim_masked$adj_pvalue < 0.01, "**",
+    ifelse(results_week_dim_masked$adj_pvalue < 0.05, "*", NA)))
+
+my_order <- c( "NREM_perc", "REM_perc", "phasic_perc","tonic_perc", "densitytheta_phasic",  "snralpha_phasic","IAPF_phasic", "densitytheta_tonic","snralpha_tonic", "IAPF_tonic","exp30to45_phasic","exp30to45_tonic")
+
+results_week_dim_masked <- results_week_dim_masked %>% 
+  mutate(row_names = factor(row_names, levels=my_order)) %>% 
+  arrange(row_names) 
+results_week_dim_masked <- results_week_dim_masked %>% 
+   mutate(dimension = fct_relevel(dimension, 
+           "Dimension 1", "Dimension 2", "Dimension 3", "Dimension 4"))
+
+results_week_dim_masked <- results_week_dim_masked %>%  mutate(across(2:6, as.numeric)) %>% add_column(y = 0) 
+
+
+PCA_weekcorrelation <- ggplot(results_week_dim_masked, aes(x = row_names, y= y, fill = Estimate)) +
+  geom_tile(colour="black") +
+ scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    facet_wrap(~dimension, nrow=4) +
+ # coord_fixed() +
+ # geom_text(aes(label= paste(round(Estimate, 2), sig, sep ="\n")), size=3) + # for unmasked results
+  geom_text(data = subset(results_week_dim_masked, !is.na(Estimate) & !is.na(sig)),
+            aes(label= paste(round(Estimate, 2), sig, sep ="\n")), size=3) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+   scale_x_discrete(labels=c('NREM\npercentage','REM\npercentage','phasic\npercentage','tonic\npercentage','phasic\ntheta\ndensity', 'phasic\nalpha\namplitude', 'phasic\nalpha\npeak\nfrequency', 'tonic\ntheta\ndensity', 'tonic\nalpha\namplitude', 'tonic\nalpha\npeak\nfrequency','phasic\nspectral\nslope\n30-45Hz','tonic\nspectral\nslope\n30-45Hz')) 
+  theme(axis.title.x=element_blank()) 
+```
+
+
+#Plot partial regression line
+```{r}
+library(effects) # plot partial regression
+library(performance) # calc marginal(fixed-effects var) and conditional (fixed + random variance) R2
+# Calculate Cohen D = estimate for fixed effect / (sqrt of sum of variances of random effects)
+
+#Dim1
+df_dim <- df_dim_week %>%  filter(dimension=="dim1")
+df_dim <- df_dim %>% 
+  mutate(exp30to45_tonic_z = scale(exp30to45_tonic)) 
+
+fit.exp30to45_tonic <- lmer(dimvalue_z ~ exp30to45_tonic_z + scale(exp30to45_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+effects.fitexp30to45_tonic_dim1 <- effect("exp30to45_tonic_z", fit.exp30to45_tonic, partial.residuals=T)
+plot(effects.fitexp30to45_tonic_dim1, main=NULL,smooth.residuals=F, lwd="5" , residuals.cex=0.5,  residuals.color=c("#FF7a11", "#FF9038","#FFa65F","#FFbc87","#FFddc1","#FFF2e9"), 
+     col.line = "black",
+     confint=list(col="grey", alpha=.3), 
+     xlab="tonic spectral slope (30-45Hz)", ylab="effort / \nworking memory inaccuracy",
+     ylim = c(-4, 4),  yaxt = "i")
+
+#Dim2
+df_dim <- df_dim_week %>%  filter(dimension=="dim2")
+df_dim <- df_dim %>% 
+  mutate(phasic_perc_z = scale(phasic_perc)) 
+
+fit.phasicperc <- lmer(dimvalue_z ~ phasic_perc_z + scale(phasic_perc_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+
+effects.fit.phasicperc_dim2 <- effect("phasic_perc_z", fit.phasicperc, partial.residuals=T)
+plot(effects.fit.phasicperc_dim2, main=NULL,smooth.residuals=F, lwd="5" , residuals.cex=0.5, residuals.color=c("#0072B2", "#008bd9","#01a4ff","#29b2ff","#50c0ff","#8bd5ff"), 
+     col.line = "black",
+     confint=list(col="grey", alpha=.3),
+     xlab="phasic percentage ", ylab="motor slowing / \nmotor inaccuracy",
+     ylim = c(-4, 4),  yaxt = "i")
+
+
+#Dim3
+df_dim <- df_dim_week %>%  filter(dimension=="dim3")
+df_dim <- df_dim %>% 
+  mutate(exp30to45_tonic_z = scale(exp30to45_tonic)) 
+
+fit.exp30to45_tonic <- lmer(dimvalue_z ~ exp30to45_tonic_z + scale(exp30to45_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+
+effects.fitexp30to45_tonic_dim3 <- effect("exp30to45_tonic_z", fit.exp30to45_tonic, partial.residuals=T)
+plot(effects.fitexp30to45_tonic_dim3, main=NULL,smooth.residuals=F, lwd="5" , residuals.cex=0.5, residuals.color=c("#FF7a11", "#FF9038","#FFa65F","#FFbc87","#FFddc1","#FFF2e9"), 
+     col.line = "black",
+     confint=list(col="grey", alpha=.3),
+     xlab="tonic spectral slope (30-45Hz)", ylab="motor consistency\n  ",
+     ylim = c(-4, 4),  yaxt = "i")
+
+#Dim4
+df_dim <- df_dim_week %>%  filter(dimension=="dim4")
+df_dim <- df_dim %>% 
+  mutate(densitytheta_z = scale(densitytheta_tonic)) 
+
+fit.densitytheta_tonic <- lmer(dimvalue_z ~ densitytheta_z + scale(exp30to45_tonic_baseline) + base_dimvalue_z + condition:night + night + test_no + scale(tst) + channel + order + (1|participant), data=df_dim)
+
+effects.fitdensitytheta_tonic_dim4 <- effect("densitytheta_z", fit.densitytheta_tonic, partial.residuals=T) 
+plot(effects.fitdensitytheta_tonic_dim4, main=NULL,smooth.residuals=F, lwd="5" , residuals.cex=0.5, residuals.color=c("#FF7a11", "#FF9038","#FFa65F","#FFbc87","#FFddc1","#FFF2e9"), 
+     col.line = "black",
+     confint=list(col="grey", alpha=.3),
+     xlab="tonic theta density", ylab="attentional lapses / \n mood worsening",
+     ylim = c(-4, 4),  yaxt = "i")
+
+```

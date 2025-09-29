@@ -1,0 +1,222 @@
+---
+title: "duration stats"
+output: html_notebook
+---
+
+# 1. Import functions
+```{r}
+library(devtools)
+library(lmerTest)
+library(lme4)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggpubr)
+library(ggprism)
+```
+# 2. Load dataset for absolute duration/common sleep duration (Fig 1, S1)
+```{r}
+df_week <- read_csv("C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/for paper/duration/df_week.csv", show_col_types = FALSE)
+df_commonweek <- read_csv("C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/for paper/duration/df_commonweek.csv", show_col_types = FALSE)
+
+# Factorise
+cols <- c("participant", "condition", "night", "order")
+df_week <- df_week %>% mutate_at(cols, factor)
+df_commonweek <- df_week %>% mutate_at(cols, factor)
+
+```
+# 3. Run lmes
+```{r}
+## absolute duration ----
+# tst
+fit.allnight_tst <- lmer(tst_min ~ night + night:condition + baseline_tstmin + order + (1|participant), data=df_week)
+anova.tst <- anova(fit.allnight_tst)
+tst.esmmeans <- estimate_means(fit.allnight_tst,  by = c("night", "condition"))
+
+#res <- residuals(fit.allnight_tst)
+#hist(res)
+
+# REM 
+fit.allnight_REM <- lmer(REM_min ~ night + night:condition + baseline_REMmin + order + (1|participant), data=df_week)
+anova.REM <- anova(fit.allnight_REM)
+REM.esmmeans <- estimate_means(fit.allnight_REM,  by = c("night", "condition"))
+
+#res <- residuals(fit.allnight_REM)
+#hist(res)
+
+# phasic 
+fit.allnight_phasic <- lmer(phasic_min ~ night + night:condition + baseline_phasicmin + order +(1|participant), data=df_week)
+anova.phasic <- anova(fit.allnight_phasic)
+phasic.esmmeans <- estimate_means(fit.allnight_phasic, by = c("night", "condition"))
+
+# tonic 
+fit.allnight_tonic <- lmer(tonic_min ~ night + night:condition + baseline_tonicmin + order +(1|participant), data=df_week)
+anova.tonic <- anova(fit.allnight_tonic)
+tonic.esmmeans <- estimate_means(fit.allnight_tonic, by = c("night", "condition"))
+
+# NREM
+fit.allnight_NREM <- lmer(NREM_min ~ night + night:condition + baseline_NREMmin + order +(1|participant), data=df_week)
+anova.NREM <- anova(fit.allnight_NREM)
+NREM.esmmeans <- estimate_means(fit.allnight_NREM, by = c("night", "condition"))
+
+fit.allnight_N1 <- lmer(N1_min ~ night + night:condition + baseline_N1min + order +(1|participant), data=df_week)
+anova.N1 <- anova(fit.allnight_N1)
+N1.esmmeans <- estimate_means(fit.allnight_N1, by = c("night", "condition"))
+
+fit.allnight_N2 <- lmer(N2_min ~ night + night:condition + baseline_N2min + order +(1|participant), data=df_week)
+anova.N2 <- anova(fit.allnight_N2)
+N2.esmmeans <- estimate_means(fit.allnight_N2, by = c("night", "condition"))
+
+fit.allnight_N3 <- lmer(N3_min ~ night + night:condition + baseline_N3min + order +(1|participant), data=df_week)
+anova.N3 <- anova(fit.allnight_N3)
+N3.esmmeans <- estimate_means(fit.allnight_N3, by = c("night", "condition"))
+
+# wake
+fit.allnight_wake <- lmer(WASO_min ~ night + night:condition + baseline_wakemin + order +(1|participant), data=df_week)
+anova.wake<- anova(fit.allnight_wake)
+wake.esmmeans <- estimate_means(fit.allnight_wake, by = c("night", "condition"))
+
+## percentage per tst ----
+# REM 
+fit.allnight_REMperc <- lmer(REM_perc ~ night + night:condition + baseline_REMperc + order + (1|participant), data=df_week)
+anova.REMperc <- anova(fit.allnight_REMperc)
+REMperc.esmmeans <- estimate_means(fit.allnight_REMperc,  by = c("night", "condition"))
+
+# phasic (per tst or per REM)
+fit.allnight_phasicperc <- lmer(phasic_perc ~ night + night:condition + baseline_phasicperc + order +(1|participant), data=df_week)
+anova.phasicperc <- anova(fit.allnight_phasicperc)
+phasicperc.esmmeans <- estimate_means(fit.allnight_phasicperc, by = c("night", "condition"))
+
+fit.allnight_phasicpercREM <- lmer(phasicperREM_perc ~ night + night:condition + baseline_phasicperREMperc + order +(1|participant), data=df_week)
+anova.phasicperREMperc <- anova(fit.allnight_phasicpercREM)
+phasicperREMperc.esmmeans <- estimate_means(fit.allnight_phasicpercREM, by = c("night", "condition"))
+
+# tonic (per tst or per REM)
+fit.allnight_tonicperc <- lmer(tonic_perc ~ night + night:condition + baseline_tonicperc + order +(1|participant), data=df_week)
+anova.tonicperc <- anova(fit.allnight_tonicperc)
+tonicperc.esmmeans <- estimate_means(fit.allnight_tonicperc, by = c("night", "condition"))
+
+fit.allnight_tonicpercREM <- lmer(tonicperREM_perc ~ night + night:condition + baseline_tonicperREMperc + order +(1|participant), data=df_week)
+anova.tonicperREMperc <- anova(fit.allnight_tonicpercREM)
+tonicperREMperc.esmmeans <- estimate_means(fit.allnight_tonicpercREM, by = c("night", "condition"))
+
+# N1
+fit.allnight_N1perc <- lmer(N1_perc ~ night + night:condition + baseline_N1perc + order +(1|participant), data=df_week)
+anova.N1perc <- anova(fit.allnight_N1perc)
+N1perc.esmmeans <- estimate_means(fit.allnight_N1perc, by = c("night", "condition"))
+
+# N2
+fit.allnight_N2perc <- lmer(N2_perc ~ night + night:condition + baseline_N2perc + order +(1|participant), data=df_week)
+anova.N2perc <- anova(fit.allnight_N2perc)
+N2perc.esmmeans <- estimate_means(fit.allnight_N2perc, by = c("night", "condition"))
+
+# N3
+fit.allnight_N3perc <- lmer(N3_perc ~ night + night:condition + baseline_N3perc + order +(1|participant), data=df_week)
+anova.N3perc <- anova(fit.allnight_N3perc)
+N3perc.esmmeans <- estimate_means(fit.allnight_N3perc, by = c("night", "condition"))
+
+# NREM
+fit.allnight_NREMperc <- lmer(NREM_perc ~ night + night:condition + baseline_NREMperc + order +(1|participant), data=df_week)
+anova.NREMperc <- anova(fit.allnight_NREMperc)
+NREMperc.esmmeans <- estimate_means(fit.allnight_NREMperc, by = c("night", "condition"))
+
+# wake
+fit.allnight_wakeperc <- lmer(wake_perc ~ night + night:condition  + baseline_wakeperc + order +(1|participant), data=df_week)
+anova.wakeperc <- anova(fit.allnight_wakeperc)
+wakeperc.esmmeans <- estimate_means(fit.allnight_wakeperc, by = c("night", "condition"))
+## percentage per common sleep duration ----
+# REM 
+fit.common_REMperc <- lmer(commonREM_perc ~ night + night:condition + baseline_commonREMperc + order + (1|participant), data=df_week)
+anova.REMperc <- anova(fit.common_REMperc)
+REMperc.esmmeans <- estimate_means(fit.common_REMperc,  by = c("night", "condition"))
+
+# phasic 
+fit.common_phasicperc <- lmer(commonphasic_perc ~ night + night:condition + baseline_commonphasicperc + order +(1|participant), data=df_week)
+anova.phasicperc <- anova(fit.common_phasicperc)
+phasicperc.esmmeans <- estimate_means(fit.common_phasicperc, by = c("night", "condition"))
+
+# tonic 
+fit.common_tonicperc <- lmer(commontonic_perc ~ night + night:condition + baseline_commontonicperc + order +(1|participant), data=df_week)
+anova.tonicperc <- anova(fit.common_tonicperc)
+tonicperc.esmmeans <- estimate_means(fit.common_tonicperc, by = c("night", "condition"))
+
+# N1
+fit.common_N1perc <- lmer(commonN1_perc ~ night + night:condition + baseline_commonN1perc + order + (1|participant), data=df_week)
+anova.N1perc <- anova(fit.common_N1perc)
+N1perc.esmmeans <- estimate_means(fit.common_N1perc, by = c("night", "condition"))
+
+# N2
+fit.common_N2perc <- lmer(commonN2_perc ~ night + night:condition + baseline_commonN2perc + order +(1|participant), data=df_week)
+anova.N2perc <- anova(fit.common_N2perc)
+N2perc.esmmeans <- estimate_means(fit.common_N2perc, by = c("night", "condition"))
+
+# N3
+fit.common_N3perc <- lmer(commonN3_perc ~ night + night:condition + baseline_commonN3perc + order +(1|participant), data=df_week)
+anova.N3perc <- anova(fit.common_N3perc)
+N3perc.esmmeans <- estimate_means(fit.common_N3perc, by = c("night", "condition"))
+
+# NREM
+fit.common_NREMperc <- lmer(commonNREM_perc ~ night + night:condition + baseline_commonNREMperc + order +(1|participant), data=df_week)
+anova.NREMperc <- anova(fit.common_NREMperc)
+NREMperc.esmmeans <- estimate_means(fit.common_NREMperc, by = c("night", "condition"))
+
+# wake
+fit.common_wakeperc <- lmer(common_wake_perc ~ night + night:condition  + baseline_commonwakeperc + order +(1|participant), data=df_week)
+anova.wakeperc <- anova(fit.common_wakeperc)
+wakeperc.esmmeans <- estimate_means(fit.common_wakeperc, by = c("night", "condition"))
+```
+# 4. Posthoc 
+```{r}
+# duration ----
+#Perform contrasts comparing condition for each night (in paper)
+pairs(emmeans(fit.allnight_wake, ~night:condition, by="night", p.adjust = "tukey"))
+
+#Perform contrasts comparing each level of night to the baseline (night == 1) separately by condition (not used)
+# NB baseline SE and SR is treated as one (baeline values as fixed effect)
+contrast((emmeans(fit.allnight_wake, ~ night:condition)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak") 
+
+# percentage ----
+#Perform contrasts comparing condition for each night (in paper)
+pairs(emmeans(fit.allnight_wakeperc, ~night:condition, by="night", p.adjust = "tukey")) 
+
+#Perform contrasts comparing each level of night to the baseline (night == 1) separately by condition (not used)
+# NB baseline SE and SR is treated as one (baeline values as fixed effect)
+contrast((emmeans(fit.allnight_wakeperc, ~ night:condition)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+```
+# 5. Plot estimated means
+```{r}
+REM <- ggplot(REM.esmmeans, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+  geom_line(linewidth=0.3, position =   position_nudge(0.1)) +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3, position = position_nudge(0.1)) +
+  geom_point(data = subset(REM.esmmeans, condition == "SE"), aes(shape = condition), position = position_nudge(0.1), size=2) +
+  geom_point(data = subset(REM.esmmeans, condition == "SR"), aes(shape = condition), fill="white", position = position_nudge(0.1), size=2) + 
+  labs(x = "night", y = "minutes") + ggtitle("REM") +
+  scale_y_continuous(limits = c(60, 160), breaks = seq(60, 160, 20), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+
+ phasic <- ggplot(phasic.esmmeans, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+  geom_line(linewidth=0.3, position =   position_nudge(0.1), colour="#0072B2") +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), colour="#0072B2", width=0.4, lwd=0.3, position = position_nudge(0.1)) +
+  geom_point(data = subset(phasic.esmmeans, condition == "SE"), aes(shape = condition), colour="#0072B2", position = position_nudge(0.1), size=2) +
+  geom_point(data = subset(phasic.esmmeans, condition == "SR"), aes(shape = condition), colour="#0072B2",fill="white", position = position_nudge(0.1), size=2) + 
+  labs(x = "night", y = "minutes") + ggtitle("phasic") +
+  scale_y_continuous(limits = c(0, 20), breaks = seq(0, 20, 5), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+ 
+tonic <- ggplot(tonic.esmmeans, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+  geom_line(linewidth=0.3, position =   position_nudge(0.1), colour="#D55E00") +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), colour="#D55E00", width=0.4, lwd=0.3, position = position_nudge(0.1)) +
+  geom_point(data = subset(tonic.esmmeans, condition == "SE"), aes(shape = condition), colour="#D55E00", position = position_nudge(0.1), size=2) +
+  geom_point(data = subset(tonic.esmmeans, condition == "SR"), aes(shape = condition), colour="#D55E00",fill="white", position = position_nudge(0.1), size=2) + 
+  labs(x = "night", y = "minutes") + ggtitle("tonic") +
+  scale_y_continuous(limits = c(60, 160), breaks = seq(60, 160, 20), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+```
+

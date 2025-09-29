@@ -1,0 +1,443 @@
+---
+title: "overnight prepost excitability changes"
+output: html_notebook
+---
+
+#Import functions
+```{r}
+library(devtools)
+library(lmerTest)
+library(lme4)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggpubr)
+library(ggprism)
+```
+
+## BASELINE PRE/POST (FIG S7)
+# 1. Load dataset for Figure S7 (baseline overnight excitability changes for NREM, phasic, tonic and its associations)
+```{r}
+df <- read_csv("data/for paper/excitability/overnight/df_baseline_overnightslopechanges_1.csv", show_col_types = FALSE)
+
+cols <- c("participant", "condition", "night", "order", "channel")
+df <- df  %>% mutate_at(cols, factor)
+factor(df$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+```
+#2. lmes
+```{r}
+df_baseline <- df %>% filter(night=="1") %>% 
+  dplyr::select(c(1:6,23:54))
+
+df_baseline <- df_baseline %>%  pivot_longer(
+  cols = c(7:38), 
+    names_to = c(".value", "time"),
+    names_pattern = "(.+)_(first|last)"
+)
+
+cols <- c("participant", "condition", "night", "order", "channel", "time")
+df_baseline <- df_baseline  %>% mutate_at(cols, factor)
+
+fit.baseline_NREM30to45 <- lmer(exponent_30_45_cyc_nrem
+ ~ time + channel + order + tst + (1|participant), data=df_baseline)
+anova.fitbaseline_NREM30to45 <- anova(fit.baseline_NREM30to45)
+
+fit.baseline_phasic30to45 <- lmer(exponent_30_45_cyc_phasic
+ ~ time + channel + order + tst + (1|participant), data=df_baseline)
+anova.fitbaseline_phasic30to45 <- anova(fit.baseline_phasic30to45)
+
+fit.baseline_tonic30to45 <- lmer(exponent_30_45_cyc_tonic
+ ~ time + channel + order + tst + (1|participant), data=df_baseline)
+anova.fitbaseline_tonic30to45 <- anova(fit.baseline_tonic30to45)
+
+# estimated means
+baseline_NREM30to45_esmmeans <- estimate_means(fit.baseline_NREM30to45 , by = c("time"))
+baseline_phasic30to45_esmmeans <- estimate_means(fit.baseline_phasic30to45 , by = c("time"))
+baseline_tonic30to45_esmmeans <- estimate_means(fit.baseline_tonic30to45 , by = c("time"))
+```
+#3. Plot
+```{r}
+library(gghalves)
+df_baseline_average <- df_baseline %>% ungroup() %>% 
+  dplyr::select(!c(2:6)) %>% 
+  group_by(participant, time) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+
+# NREM
+plot_baseline_NREM30to45 <- ggplot(df_baseline_average, aes(x = time, y = exponent_30_45_cyc_nrem, fill = time)) +
+  # Left half violin for first
+  geom_half_violin(data = subset(df_baseline_average, time == "first"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for last
+  geom_half_violin(data = subset(df_baseline_average, time == "last"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = time, colour=time), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+ scale_fill_manual(values = c("first" = "#009E73B2", "last" = "#40E36BB2")) + 
+  scale_colour_manual(values = c("first" = "#009E73B2", "last" = "#40E36BB2")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(-6, -1.5), breaks = seq(-6,-1.5,0.5), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("NREM spectral slope 30 - 45 Hz" ~(mu*V^2/Hz)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") 
+
+plot_baseline_NREM30to45 <- plot_baseline_NREM30to45 +
+   geom_errorbar(data = subset(baseline_NREM30to45_esmmeans, time == "first"), aes(x=time, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_NREM30to45_esmmeans, time == "first"), aes(x=time, y=Mean, shape=time, colour=time), fill="#009E73", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_NREM30to45_esmmeans, time == "last"), aes(x=time, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_NREM30to45_esmmeans, time == "last"), aes(x=time, y=Mean, shape=time, colour=time),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+```
+#4. How does the "modulation" associate with slope/alpha/theta?  
+```{r}
+df_baseline <- df %>%
+  filter(night == "1")
+
+# Last-First NREM with REM slope correlation ----
+# Baseline ---
+df_baseline <- df_baseline %>%  
+  mutate(exponent_30_45_cyc_nrem_firstlast_diff_z = scale(exponent_30_45_cyc_nrem_firstlast_diff)) %>% 
+  mutate(m_exponent_30_45_cyc_phasic_z = scale(m_exponent_30_45_cyc_phasic)) %>% 
+  mutate(m_exponent_30_45_cyc_tonic_z = scale(m_exponent_30_45_cyc_tonic)) %>% 
+  mutate(phasic_density_theta_z = scale(phasic_density_theta)) %>% 
+  mutate(phasic_snr_alpha_z = scale(phasic_snr_alpha)) %>% 
+  mutate(tonic_density_theta_z = scale(tonic_density_theta)) %>% 
+  mutate(tonic_snr_alpha_z = scale(tonic_snr_alpha)) %>% 
+  mutate(phasic_IAPF_z = scale(IAPF_phasic)) %>% 
+  mutate(tonic_IAPF_z = scale(IAPF_tonic))
+
+fit.phasicbaseline_exp30to45 <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ m_exponent_30_45_cyc_phasic_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+phasicslope_summary <- as.data.frame(coef(summary(fit.phasicbaseline_exp30to45))) 
+phasicslope_summary <- phasicslope_summary[2,]
+
+fit.phasicbaseline_thetadensity <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ phasic_density_theta_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+phasic_dentheta_summary <- as.data.frame(coef(summary(fit.phasicbaseline_thetadensity))) 
+phasic_dentheta_summary <- phasic_dentheta_summary[2,]
+
+fit.phasicbaseline_alphamplitude <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ phasic_snr_alpha_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+phasic_snralpha_summary <- as.data.frame(coef(summary(fit.phasicbaseline_alphamplitude))) 
+phasic_snralpha_summary <- phasic_snralpha_summary[2,]
+
+##
+fit.tonicbaseline_exp30to45 <- lmer(exponent_30_45_cyc_nrem_firstlast_diff
+ ~ m_exponent_30_45_cyc_tonic_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+tonicslope_summary <- as.data.frame(coef(summary(fit.tonicbaseline_exp30to45))) 
+tonicslope_summary <- tonicslope_summary[2,]
+
+fit.tonicbaseline_thetadensity <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ tonic_density_theta_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+tonic_dentheta_summary <- as.data.frame(coef(summary(fit.tonicbaseline_thetadensity))) 
+tonic_dentheta_summary <- tonic_dentheta_summary[2,]
+
+fit.tonicbaseline_alphamplitude <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ tonic_snr_alpha_z + channel + order + scale(tst) + (1|participant), data=df_baseline)
+tonic_snralpha_summary <- as.data.frame(coef(summary(fit.tonicbaseline_alphamplitude))) 
+tonic_snralpha_summary <- tonic_snralpha_summary[2,]
+
+results_adj <- rbind(phasicslope_summary, phasic_dentheta_summary, phasic_snralpha_summary, tonicslope_summary, tonic_dentheta_summary, tonic_snralpha_summary) 
+colnames(results_adj)[5] <- "pvalue"
+results_adj <- results_adj %>%
+  mutate(adj_pvalue = p.adjust(pvalue, method = "fdr"))
+```
+#5 Plot
+```{r}
+ordinary_residuals <- residuals(fit.tonicbaseline_exp30to45) # change model accordingly
+coeff_of_interest <- as.numeric(fixef(fit.tonicbaseline_exp30to45)["m_exponent_30_45_cyc_tonic_z"])
+predictor_values <- as.numeric(model.frame(fit.tonicbaseline_exp30to45)$m_exponent_30_45_cyc_tonic_z)
+partial_residuals_calculated <- ordinary_residuals + coeff_of_interest * predictor_values
+df_points_for_plot <- data.frame(
+    x_variable = predictor_values,
+    y_partial_residual = partial_residuals_calculated)
+df_line <- as.data.frame(effects.fittonicbaseline_exp30to45)
+
+plot_corr <- ggplot(data = df_points_for_plot, aes(x = x_variable, y = y_partial_residual)) +
+     # Add partial residual points
+     geom_point(aes(color = x_variable), size = 0.5 * 2) +
+    # scale_color_gradientn(colors = c("#0072B2", "#008bd9", "#01a4ff", "#29b2ff", "#50c0ff", "#8bd5ff")) +
+     scale_color_gradientn(colors = c("#FF7a11","#FFbc87", "#FF9038","#FFbc87", "#FFbc87", "#FFa65F")) +
+     # Add the fitted line
+     geom_line(data = df_line, aes(x = m_exponent_30_45_cyc_tonic_z, y = fit),
+               color = "black", linewidth = 1) +
+     # Add confidence interval ribbon
+     geom_ribbon(data = df_line,
+                 aes(x = m_exponent_30_45_cyc_tonic_z, y=fit, ymin = lower, ymax = upper),
+                 fill = "grey", alpha = 0.3) + # No 'y_partial_residual' should be here or implied
+     labs(
+         x = expression("mean tonic spectral slope " ~ (mu*V^2/Hz)),
+        # x="tonic theta density (oscillations/min)",
+        # x="tonic alpha amplitude" ~ (mu*V),
+         y = expression("spectral slope change"~ (last~NREM~-~first~NREM) ~ (mu*V^2/Hz)),
+         title = ""
+     ) +
+    xlim(-1.5, 1.5) + 
+    scale_y_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1), expand = c(0, NA)) +
+    theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+    theme(legend.position = "none")
+```
+
+## WEEK PRE/POST (FIG6)
+#1. Load dataset for Fig6a,b,d,e,g,h (SS and IS overnight excitability changes for NREM, phasic, tonic)
+```{r}
+df <- read_csv("data/for paper/overnight excitability/df_week_overnightslopechanges_2.csv", show_col_types = FALSE)
+
+cols <- c("participant", "condition", "night", "order", "channel")
+df <- df  %>% mutate_at(cols, factor)
+factor(df$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+```
+#2. lmes 
+```{r}
+# change to SE or SR
+df_week <- df %>%  
+  filter(condition=="SR")
+
+# NREM
+fit.week_NREM30to45 <- lmer(exponent_30_45_cyc_nrem
+ ~ night*time + channel + exponent_30_45_cyc_nrem_baseline + tst + order + (1|participant), data=df_week)
+anova.fitweek_NREM30to45 <- anova(fit.week_NREM30to45)
+
+# phasic
+fit.week_phasic30to45 <- lmer(exponent_30_45_cyc_phasic
+ ~ night*time + channel + exponent_30_45_cyc_phasic_baseline + tst + order + (1|participant), data=df_week)
+anova.fitweek_phasic30to45 <- anova(fit.week_phasic30to45)
+
+# tonic
+fit.week_tonic30to45 <- lmer(exponent_30_45_cyc_tonic
+ ~ night*time + channel + exponent_30_45_cyc_tonic_baseline + tst + order + (1|participant), data=df_week)
+anova.fitweek_tonic30to45 <- anova(fit.week_tonic30to45)
+
+exp30to45_NREMfirstlast_esmmeans <- estimate_means(fit.week_NREM30to45 , by = c( "time"))
+exp30to45_phasicfirstlast_esmmeans <- estimate_means(fit.week_phasic30to45 , by = c( "time"))
+exp30to45_tonicfirstlast_esmmeans <- estimate_means(fit.week_tonic30to45 , by = c( "time"))
+```
+#3. Plot
+```{r}
+library(gghalves)
+# Average for visualisation
+df_week_average <- df_week %>% ungroup() %>% 
+  dplyr::select(c(2,7,8:45)) %>% #participant, time , variables
+  group_by(participant, time) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+
+## SE ----
+# NREM ---
+plot_NREM30to45_firstlast <- ggplot(df_week_average, aes(x = time, y = exponent_30_45_cyc_nrem, fill = time)) +
+  # Left half violin for SE
+  geom_half_violin(data = subset(df_week_average, time == "first"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for SR
+  geom_half_violin(data = subset(df_week_average, time == "last"), side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = time, colour=time), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+ scale_fill_manual(values = c("first" = "#009E73B2", "last" = "#40E36BB2")) + 
+  scale_colour_manual(values = c("first" = "#009E73B2", "last" = "#40E36BB2")) + 
+  scale_shape_manual(values = c(16,16)) +
+  scale_y_continuous(limits = c(-6, -1.5), breaks = seq(-6, -1.5,0.5), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+   ylab("spectral slope" ~(mu*V^2/Hz)) + 
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") 
+
+plot_NREM30to45_firstlast <- plot_NREM30to45_firstlast +
+  # error bar and average for "first"
+   geom_errorbar(data = subset(exp30to45_NREMfirstlast_esmmeans, time == "first"), aes(x=time, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.2, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(exp30to45_NREMfirstlast_esmmeans, time == "first"), aes(x=time, y=Mean, colour=time), fill="#009E73B2", shape=21, colour="black", size =1, stroke=0.2,  position = position_nudge(x = -0.2)) +
+    # error bar and average for "last"
+    geom_errorbar(data = subset(exp30to45_NREMfirstlast_esmmeans, time == "last"), aes(x=time, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.2, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(exp30to45_NREMfirstlast_esmmeans, time == "last"), aes(x=time, y=Mean, colour=time), fill="#40E36BB2", shape=21, colour="black", size =1,stroke=0.2,   position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+```
+
+## WEEK SLOPE DIFFERENCES (POST-PRE) (FIG6)
+#1. Load dataset (Fig6)
+```{r}
+df <- read_csv("data/for paper/overnight excitability/df_week_prepostslopediff_3.csv", show_col_types = FALSE)
+
+cols <- c("participant", "condition", "night", "order", "channel")
+df <- df  %>% mutate_at(cols, factor)
+factor(df$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+```
+#2. lmes
+```{r}
+df_week_exp30to45 <- df %>% filter(!night=="9") %>% 
+  dplyr::select(1:5 | contains("exponent_30_45")) %>% 
+   pivot_longer(
+    cols = c(10:13),
+    names_to = "state_cycle",
+    names_pattern = "m_exponent_30_45_cyc_(.*)",
+    values_to = "exponent_cycle"
+  ) %>% 
+   pivot_longer(
+    cols = c(11:13),
+    names_to = "state_between",
+    names_pattern = "m_exponent_30_45_between_(.*)",
+    values_to = "exponent_between"
+  )
+
+cols <- c("participant", "condition", "night", "state_cycle", "state_between", "channel")
+df_week_exp30to45 <- df_week_exp30to45  %>% mutate_at(cols, factor)
+
+df_week_exp30to45_NREM <- df_week_exp30to45 %>%  filter(state_cycle =="nrem")
+df_week_exp30to45_phasic <- df_week_exp30to45 %>%  filter(state_cycle =="phasic")
+df_week_exp30to45_tonic <- df_week_exp30to45 %>%  filter(state_cycle =="tonic")
+
+# NREM ----
+fit.NREMweek_exp30_45_firstlast <- lmer(exponent_30_45_cyc_nrem_firstlast_diff
+ ~ night + channel + night:condition + condition:channel + exponent_30_45_cyc_nrem_firstlast_diff_baseline + tst  + (1|participant), data=df_week_exp30to45_NREM)
+anova.fitNREMweek_firstlast_exp30_45 <- anova(fit.NREMweek_exp30_45_firstlast)
+
+fit.phasicweek_exp30_45_firstlast <- lmer(exponent_30_45_cyc_phasic_firstlast_diff
+ ~ night + channel + night:condition + condition:channel + exponent_30_45_cyc_phasic_firstlast_diff_baseline + tst  + (1|participant), data=df_week_exp30to45_phasic)
+anova.fitphasicweek_firstlast_exp30_45 <- anova(fit.phasicweek_exp30_45_firstlast)
+
+fit.tonicweek_exp30_45_firstlast <- lmer(exponent_30_45_cyc_tonic_firstlast_diff
+ ~ night + channel + night:condition + condition:channel + exponent_30_45_cyc_tonic_firstlast_diff_baseline + tst  +(1|participant), data=df_week_exp30to45_tonic)
+anova.fittonicweek_firstlast_exp30_45 <- anova(fit.tonicweek_exp30_45_firstlast)
+
+# estimated means
+q2_exp30to45_NREMfirstlast_esmmeans <- estimate_means(fit.NREMweek_exp30_45_firstlast , by = c( "night", "condition"))
+q2_exp30to45_phasicfirstlast_esmmeans <- estimate_means(fit.phasicweek_exp30_45_firstlast , by = c( "night", "condition"))
+q2_exp30to45_tonicfirstlast_esmmeans <- estimate_means(fit.tonicweek_exp30_45_firstlast , by = c( "night", "condition"))
+```
+#3. Posthoc 
+```{r}
+pairs(emmeans(fit.NREMweek_exp30_45_firstlast, ~night:condition, by="night", p.adjust = "tukey"))
+#Perform contrasts comparing each level of night to the baseline (night == 1) separately by condition
+contrast((emmeans(fit.NREMweek_exp30_45_firstlast, ~ night:condition)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak") # as we assume baseline SE and SR as one, it compares all to SEnight1 (which is really the combo of both)
+```
+#4 Plot
+```{r}
+NREM30to45_firstlast <- ggplot(q2_exp30to45_NREMfirstlast_esmmeans, aes(x = night, y = Mean, shape=condition, group=condition, colour=condition)) +
+  geom_line(position = position_dodge(0.3)) +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(-0.6, 0), breaks = seq(-0.6, 0, 0.1), expand = c(0, NA)) +
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+   scale_fill_manual(values = c("SE" = "#009E73B2", "SR" = "#009E73B2")) + 
+  scale_colour_manual(values = c("SE" = "#009E73B2", "SR" = "#009E73B2")) + 
+  xlab("night") +  ylab("spectral slope change\n(last NREM - first NREM)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+
+phasic30to45_firstlast <- ggplot(q2_exp30to45_phasicfirstlast_esmmeans, aes(x = night, y = Mean, shape=condition, group=condition, colour=condition)) +
+  geom_line(position = position_dodge(0.3)) +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(-0.2, 0.3), breaks = seq(-0.2, 0.3, 0.1), expand = c(0, NA)) +
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+   scale_fill_manual(values = c("SE" = "#0072B2", "SR" = "#0072B2")) + 
+  scale_colour_manual(values = c("SE" = "#0072B2", "SR" = "#0072B2")) + 
+  xlab("night") +  ylab("spectral slope change\n(last NREM - first NREM)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+
+```
+#5. How does the "modulation" associate with slope/alpha/theta?  
+```{r}
+df_week <- df %>%
+  filter(!night=="9")
+
+df_week <- df_week %>%  
+  mutate(exponent_30_45_cyc_nrem_firstlast_diff_z = scale(exponent_30_45_cyc_nrem_firstlast_diff)) %>% 
+  mutate(m_exponent_30_45_cyc_phasic_z = scale(m_exponent_30_45_cyc_phasic)) %>% 
+  mutate(m_exponent_30_45_cyc_tonic_z = scale(m_exponent_30_45_cyc_tonic))  %>%  
+  mutate(m_exponent_30_45_prepost_diff_z = scale(m_exponent_30_45_prepost_diff)) %>% 
+  mutate(m_exponent_30_45_between_phasic_z = scale(m_exponent_30_45_between_phasic)) %>% 
+  mutate(m_exponent_30_45_between_tonic_z = scale(m_exponent_30_45_between_tonic)) %>% 
+  mutate(phasic_density_theta_z = scale(phasic_density_theta)) %>% 
+  mutate(phasic_snr_alpha_z = scale(log(phasic_snr_alpha))) %>% 
+  mutate(tonic_density_theta_z = scale(tonic_density_theta)) %>% 
+  mutate(tonic_snr_alpha_z = scale(log(tonic_snr_alpha))) %>% 
+  mutate(phasic_IAPF_z = scale(IAPF_phasic)) %>% 
+  mutate(tonic_IAPF_z = scale(IAPF_tonic))
+
+fit.week_exp30to45_phasic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ m_exponent_30_45_cyc_phasic_z +  scale(m_exponent_30_45_cyc_phasic_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night + condition:night + channel +order + scale(tst) + (1|participant), data=df_week)
+phasicslope_summary <- as.data.frame(coef(summary(fit.week_exp30to45_phasic))) 
+phasicslope_summary <- phasicslope_summary[2,]
+
+fit.week_densitytheta_phasic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ phasic_density_theta_z +  scale(phasic_density_theta_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night + channel +order + condition:night + scale(tst) + (1|participant), data=df_week)
+phasic_dentheta_summary <- as.data.frame(coef(summary(fit.week_densitytheta_phasic))) 
+phasic_dentheta_summary <- phasic_dentheta_summary[2,]
+
+fit.week_snralpha_phasic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ phasic_snr_alpha_z +  scale(phasic_snr_alpha_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night + condition:night + channel +order + scale(tst) + (1|participant), data=df_week)
+phasic_snralpha_summary <- as.data.frame(coef(summary(fit.week_snralpha_phasic))) 
+phasic_snralpha_summary <- phasic_snralpha_summary[2,]
+
+##
+fit.week_exp30to45_tonic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ m_exponent_30_45_cyc_tonic_z +  scale(m_exponent_30_45_cyc_tonic_baseline) + scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night + condition:night + channel + scale(tst) + order + (1|participant), data=df_week)
+tonicslope_summary <- as.data.frame(coef(summary(fit.week_exp30to45_tonic))) 
+tonicslope_summary <- tonicslope_summary[2,]
+
+fit.week_densitytheta_tonic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ tonic_density_theta_z +  scale(tonic_density_theta_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night  +condition:night + channel +order + scale(tst) + (1|participant), data=df_week)
+tonic_dentheta_summary <- as.data.frame(coef(summary(fit.week_densitytheta_tonic))) 
+tonic_dentheta_summary <- tonic_dentheta_summary[2,]
+
+fit.week_snralpha_tonic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+ ~ tonic_snr_alpha_z +  scale(tonic_snr_alpha_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + night  + condition:night +channel +order + scale(tst) + (1|participant), data=df_week)
+tonic_snralpha_summary <- as.data.frame(coef(summary(fit.week_snralpha_tonic))) 
+tonic_snralpha_summary <- tonic_snralpha_summary[2,]
+
+#fit.week_IAPF_tonic <- lmer(exponent_30_45_cyc_nrem_firstlast_diff_z
+# ~ tonic_IAPF_z +  scale(IAPF_tonic_baseline) +  scale(exponent_30_45_cyc_nrem_firstlast_diff_baseline) + #night + condition:night + channel +order + scale(tst) + (1|participant), data=df_week)
+
+results_adj <- rbind(phasicslope_summary, phasic_dentheta_summary, phasic_snralpha_summary, tonicslope_summary, tonic_dentheta_summary, tonic_snralpha_summary) 
+colnames(results_adj)[5] <- "pvalue"
+results_adj <- results_adj %>%
+  mutate(adj_pvalue = p.adjust(pvalue, method = "fdr"))
+```
+#6. Plot
+```{r}
+ordinary_residuals <- residuals(fit.week_snralpha_phasic) # change model accordingly
+coeff_of_interest <- as.numeric(fixef(fit.week_snralpha_phasic)["phasic_snr_alpha_z"])
+predictor_values <- as.numeric(model.frame(fit.week_snralpha_phasic)$phasic_snr_alpha_z)
+partial_residuals_calculated <- ordinary_residuals + coeff_of_interest * predictor_values
+df_points_for_plot <- data.frame(
+    x_variable = predictor_values,
+    y_partial_residual = partial_residuals_calculated)
+df_line <- as.data.frame(eff_phasicsnralpha)
+
+plot_corr <- ggplot(data = df_points_for_plot, aes(x = x_variable, y = y_partial_residual)) +
+     # Add partial residual points
+     geom_point(aes(color = x_variable), size = 0.5 * 2, shape=1, stroke=0.35) +
+     scale_color_gradientn(colors = c("#0072B2", "#8bd5ff", "#008bd9", "#8bd5ff", "#0072B2", "#8bd5ff")) +
+  #   scale_color_gradientn(colors = c("#FF7a11","#FFbc87", "#FF9038","#FFa65F", "#FF7a11", "#FFbc87")) +
+     # Add the fitted line
+     geom_line(data = df_line, aes(x = phasic_snr_alpha_z, y = fit),
+               color = "black", linewidth = 1) +
+     # Add confidence interval ribbon
+     geom_ribbon(data = df_line,
+                 aes(x = phasic_snr_alpha_z, y=fit, ymin = lower, ymax = upper),
+                 fill = "grey", alpha = 0.3) + # No 'y_partial_residual' should be here or implied
+     labs(
+       # x = expression("tonic spectral slope (z-scored)"),
+       #  x="tonic theta density (z-scored)",
+         x="phasic alpha amplitude (z-scored)",
+         y = expression("spectral slope change\nNREMpost - NREMpre (z-scored)"),
+         title = ""
+     ) +
+    scale_x_continuous(limits = c(-2, 6), breaks = seq(-2, 6, 2), expand = c(0, NA)) +
+    scale_y_continuous(limits = c(-6, 6), breaks = seq(-6, 6, 2), expand = c(0, NA)) +
+    theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+    theme(legend.position = "none")
+```
+
+## TRIPLETS (Fig S8)
+
