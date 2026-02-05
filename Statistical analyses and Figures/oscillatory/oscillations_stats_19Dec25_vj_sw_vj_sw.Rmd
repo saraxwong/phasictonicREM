@@ -1,0 +1,732 @@
+---
+title: "oscillations components stats"
+output: html_notebook
+---
+
+# 1. Import functions
+```{r}
+library(devtools)
+library(lmerTest)
+library(lme4)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggpubr)
+library(ggprism)
+library(modelbased)
+```
+## Looking at baseline nights only, differences between wake/NREM/REM and phasic/tonic (Fig2, S5, S6) 
+```{r}
+# load data
+df_oscillations <- readRDS("df_oscillations_19Dec25.rds")
+
+# Factorise
+cols <- c("participant", "condition", "night", "order", "state", "channel")
+df_oscillations <- df_oscillations %>% mutate_at(cols, factor)
+factor(df_oscillations$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8"))
+
+```
+# phasic vs tonic
+#1 lmes 
+```{r}
+df_baseline<- df_oscillations %>%
+filter(night == "1") %>%
+ filter(state == "phasic" | state=="tonic")
+
+# alpha: IAPF, density, snr (= amplitude in paper, corrected for 1/f) -----
+fit.baseline_IAPF <- lmer(IAPF ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_IAPF  <-  anova(fit.baseline_IAPF )
+
+#res <- residuals(fit.baseline_IAPF)
+#qqnorm(res); qqline(res, col="red")
+
+fit.baseline_densityalpha <- lmer(densityalpha ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_densityalpha  <-  anova(fit.baseline_densityalpha )
+
+fit.baseline_snralpha <- lmer(snralpha ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_snralpha  <-  anova(fit.baseline_snralpha )
+
+# theta: ITPF, density, snr (= amplitude in paper, corrected for 1/f) -----
+fit.baseline_ITPF <- lmer(ITPF ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_ITPF  <-  anova(fit.baseline_ITPF )
+
+fit.baseline_densitytheta <- lmer(densitytheta ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_densitytheta  <-  anova(fit.baseline_densitytheta )
+
+fit.baseline_snrtheta <- lmer(snrtheta ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_snrtheta  <-  anova(fit.baseline_snrtheta)
+
+# estimated means ----
+# state 
+baseline_IAPF_state_esmmeans <- estimate_means(fit.baseline_IAPF , by = c("state"))
+baseline_densityalpha_state_esmmeans <- estimate_means(fit.baseline_densityalpha , by = c("state"))
+baseline_snralpha_state_esmmeans <- estimate_means(fit.baseline_snralpha , by = c("state"))
+
+baseline_ITPF_state_esmmeans <- estimate_means(fit.baseline_ITPF , by = c("state"))
+baseline_densitytheta_state_esmmeans <- estimate_means(fit.baseline_densitytheta , by = c("state"))
+baseline_snrtheta_state_esmmeans <- estimate_means(fit.baseline_snrtheta , by = c("state"))
+
+# state channel
+baseline_IAPF_statechannel_esmmeans <- estimate_means(fit.baseline_IAPF , by = c("state", "channel"))
+baseline_densityalpha_statechannel_esmmeans <- estimate_means(fit.baseline_densityalpha , by = c("state", "channel"))
+baseline_snralpha_statechannel_esmmeans <- estimate_means(fit.baseline_snralpha , by = c("state", "channel"))
+
+baseline_ITPF_statechannel_esmmeans <- estimate_means(fit.baseline_ITPF , by = c("state", "channel"))
+baseline_densitytheta_statechannel_esmmeans <- estimate_means(fit.baseline_densitytheta , by = c("state", "channel"))
+baseline_snrtheta_statechannel_esmmeans <- estimate_means(fit.baseline_snrtheta , by = c("state", "channel"))
+
+# posthoc ----
+# compare between states
+pairs(emmeans(fit.baseline_IAPF, ~state, p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_densityalpha, ~state, p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_snralpha, ~state, p.adjust = "tukey"))
+
+pairs(emmeans(fit.baseline_ITPF, ~state, p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_densitytheta, ~state, p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_snrtheta, ~state, p.adjust = "tukey"))
+
+# compare channels for each state -- "simple effects"
+pairs(emmeans(fit.baseline_IAPF, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_densityalpha, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_snralpha, ~state:channel, by="channel", p.adjust = "tukey"))
+
+pairs(emmeans(fit.baseline_ITPF, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_densitytheta, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_snrtheta, ~state:channel, by="channel", p.adjust = "tukey"))
+
+```
+#2 Plot 
+```{r}
+library(gghalves) # for geom half violin
+
+# Plot state (Fig 2) ----
+df_baseline_average <- df_baseline %>% 
+  dplyr::select(!c(3:7)) %>% 
+  group_by(participant, state) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+
+# theta ----
+# ITPF 
+ITPF_topography <- ggplot(df_baseline_average, aes(x = state, y = ITPF, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(0, 7), breaks = seq(0, 7, 1), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("peak frequency (Hz)") +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+ITPF_topography <- ITPF_topography +
+   geom_errorbar(data = subset(baseline_ITPF_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_ITPF_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_ITPF_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_ITPF_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+ITPF_topography
+
+# density theta 
+densitytheta_topography <- ggplot(df_baseline_average, aes(x = state, y = densitytheta, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(0, 18), breaks = seq(0, 18, 3), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("density(oscillations/min)") +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+densitytheta_topography <- densitytheta_topography +
+   geom_errorbar(data = subset(baseline_densitytheta_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_densitytheta_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_densitytheta_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_densitytheta_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+densitytheta_topography
+
+# snr theta 
+snrtheta_topography <- ggplot(df_baseline_average, aes(x = state, y = snrtheta, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(1.6, 3.1), breaks = seq(1.6, 3.1, 0.3), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab(expression(amplitude~(mu*V))) +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+snrtheta_topography <- snrtheta_topography +
+   geom_errorbar(data = subset(baseline_snrtheta_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_snrtheta_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_snrtheta_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_snrtheta_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+snrtheta_topography
+
+# alpha ----
+# IAPF 
+IAPF_topography <- ggplot(df_baseline_average, aes(x = state, y = IAPF, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(6, 11), breaks = seq(6, 11, 1), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("peak frequency(Hz)") +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+IAPF_topography <- IAPF_topography +
+   geom_errorbar(data = subset(baseline_IAPF_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_IAPF_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_IAPF_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_IAPF_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+IAPF_topography 
+
+# density alpha 
+densityalpha_topography <- ggplot(df_baseline_average, aes(x = state, y = densityalpha, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  coord_cartesian(ylim = c(-0.08, NA)) +
+  scale_y_continuous(limits = c(0, 40), breaks = seq(0, 40, 5), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("density (oscillations/min)") +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+densityalpha_topography <- densityalpha_topography +
+   geom_errorbar(data = subset(baseline_densityalpha_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_densityalpha_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_densityalpha_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_densityalpha_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+densityalpha_topography 
+
+# snr alpha - state
+snralpha_topography <- ggplot(df_baseline_average, aes(x = state, y = snralpha, fill = state)) +
+  # Left half violin for phasic
+  geom_half_violin(data = subset(df_baseline_average, state == "phasic"),side = "l",  # <-- flip to left
+ alpha = 0.8, trim = FALSE, position = position_nudge(x = -0.1)) +
+# Right half violin for tonic
+  geom_half_violin(data = subset(df_baseline_average, state == "tonic"),side = "r", alpha = 0.8, trim = FALSE, position = position_nudge(x = 0.1)) +
+# join same participants with line across state
+   geom_line(aes(group = participant), colour = "black", linewidth = 0.3, alpha = 0.2, position = position_jitter(width = 0.05, seed = 123)) +
+  geom_point(aes(shape = state, colour=state), size=1, position = position_jitter(width = 0.05, seed = 123)) +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  scale_shape_manual(values = c(21,21)) +
+  scale_y_continuous(limits = c(1.5, 3.3), breaks = seq(1.5, 3.3, 0.3), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab(expression(amplitude~(mu*V))) +
+  theme_prism(base_size = 11, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none")
+
+  # add error bar and mean for phasic (esmmeans)
+snralpha_topography <- snralpha_topography +
+   geom_errorbar(data = subset(baseline_snralpha_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.2)) +
+    geom_point(data = subset(baseline_snralpha_state_esmmeans, state == "phasic"), aes(x=state, y=Mean, shape=state, colour=state), fill="#0072B2", colour="black", size =2,  position = position_nudge(x = -0.2)) +
+   # add error bar and mean for tonic (esmmeans)
+    geom_errorbar(data = subset(baseline_snralpha_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.2)) +
+    geom_point(data = subset(baseline_snralpha_state_esmmeans, state == "tonic"), aes(x=state, y=Mean, shape=state, colour=state),colour="black", size =2,  position = position_nudge(x = 0.2))  +
+ # geom_line(data = baseline_ITPF_state_esmmeans, aes(x=state, y=Mean, group=1), colour = "black", linewidth = 1) +
+  scale_x_discrete(name = NULL) 
+snralpha_topography
+
+# average across nights for visualisation
+df_baseline_average <- df_baseline %>% 
+  dplyr::select(!c(3:6)) %>% 
+  group_by(participant, state, channel) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+df_baseline_average$state <- factor(df_baseline_average$state, order=TRUE,
+       #levels= c("wake", "NREM", "REM")) 
+       levels= c("phasic", "tonic"))
+df_baseline_average$channel <- factor(df_baseline_average$channel, order=TRUE,
+       levels= c("frontal", "central", "parietal", "occipital"))
+
+
+# Plot state channel (Fig S6) ----
+df_baseline_average <- df_baseline %>% 
+  select(!c(3:6)) %>% 
+  group_by(participant, state, channel) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+df_baseline_average$state <- factor(df_baseline_average$state, order=TRUE,
+       levels= c("phasic", "tonic"))
+df_baseline_average$channel <- factor(df_baseline_average$channel, order=TRUE,
+       levels= c("frontal", "central", "parietal", "occipital"))
+
+# theta ----
+# density theta 
+densitytheta_topography <- ggplot(df_baseline_average, aes(x = channel, y = densitytheta, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(0, 18), breaks = seq(0, 18, 3), expand = c(0, NA)) +
+  ylab("density(oscillations/min)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_densitytheta_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_densitytheta_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_densitytheta_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_densitytheta_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+densitytheta_topography
+
+# ITPF
+ITPF_topography <- ggplot(df_baseline_average, aes(x = channel, y = ITPF, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(2, 6), breaks = seq(2, 6, 1), expand = c(0, NA)) +
+  ylab("peak frequency (Hz)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_ITPF_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_ITPF_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_ITPF_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_ITPF_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+ITPF_topography
+
+# amplitude theta
+snrtheta_topography <- ggplot(df_baseline_average, aes(x = channel, y = snrtheta, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(1, 4), breaks = seq(1, 4, 0.5), expand = c(0, NA)) +
+   ylab(expression(amplitude~(mu*V))) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_snrtheta_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_snrtheta_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_snrtheta_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_snrtheta_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+snrtheta_topography
+
+# alpha ----
+# density alpha 
+densityalpha_topography <- ggplot(df_baseline_average, aes(x = channel, y = densityalpha, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(0, 40), breaks = seq(0, 40, 5), expand = c(0, NA)) +
+  ylab("density(oscillations/min)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_densityalpha_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_densityalpha_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_densityalpha_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_densityalpha_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+densityalpha_topography
+
+# IAPF
+IAPF_topography <- ggplot(df_baseline_average, aes(x = channel, y = IAPF, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(6, 12), breaks = seq(6, 12, 1), expand = c(0, NA)) +
+  ylab("peak frequency (Hz)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_IAPF_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_IAPF_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_IAPF_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_IAPF_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+IAPF_topography
+
+# amplitude alpha
+snralpha_topography <- ggplot(df_baseline_average, aes(x = channel, y = snralpha, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+   scale_y_continuous(limits = c(1, 5), breaks = seq(1, 5, 1), expand = c(0, NA)) +
+   ylab(expression(amplitude~(mu*V))) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_snralpha_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.22)) +
+  geom_point(data = subset(baseline_snralpha_statechannel_esmmeans, state == "phasic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.22)) +
+    geom_errorbar(data=subset(baseline_snralpha_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.22)) +
+  geom_point(data = subset(baseline_snralpha_statechannel_esmmeans, state == "tonic"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.22)) 
+snralpha_topography
+
+```
+# wake NREM REM
+#1 lmes 
+```{r}
+rm(list = ls()[-match("df_oscillations", ls())])
+
+df_baseline<- df_oscillations %>%
+filter(night == "1") %>%
+  filter(state == "wake" | state == "NREM" | state == "REM") 
+
+# alpha: IAPF, density, snr (= amplitude in paper, corrected for 1/f) -----
+fit.baseline_IAPF <- lmer(IAPF ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_IAPF  <-  anova(fit.baseline_IAPF )
+anova.baseline_IAPF
+
+#res <- residuals(fit.baseline_IAPF)
+#qqnorm(res); qqline(res, col="red")
+
+fit.baseline_densityalpha <- lmer(densityalpha ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_densityalpha  <-  anova(fit.baseline_densityalpha )
+anova.baseline_densityalpha 
+
+fit.baseline_snralpha <- lmer(snralpha ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_snralpha  <-  anova(fit.baseline_snralpha )
+anova.baseline_snralpha
+
+# theta: ITPF, density, snr (= amplitude in paper, corrected for 1/f) -----
+fit.baseline_ITPF <- lmer(ITPF ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_ITPF  <-  anova(fit.baseline_ITPF )
+anova.baseline_ITPF
+
+fit.baseline_densitytheta <- lmer(densitytheta ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_densitytheta  <-  anova(fit.baseline_densitytheta )
+anova.baseline_densitytheta
+
+fit.baseline_snrtheta <- lmer(snrtheta ~ state*channel + order + tst + (1|participant), data=df_baseline)
+anova.baseline_snrtheta  <-  anova(fit.baseline_snrtheta)
+anova.baseline_snrtheta
+
+# estimated means
+baseline_IAPF_statechannel_esmmeans <- estimate_means(fit.baseline_IAPF , by = c("state", "channel"))
+baseline_densityalpha_statechannel_esmmeans <- estimate_means(fit.baseline_densityalpha , by = c("state", "channel"))
+baseline_snralpha_statechannel_esmmeans <- estimate_means(fit.baseline_snralpha , by = c("state", "channel"))
+
+baseline_ITPF_statechannel_esmmeans <- estimate_means(fit.baseline_ITPF , by = c("state", "channel"))
+baseline_densitytheta_statechannel_esmmeans <- estimate_means(fit.baseline_densitytheta , by = c("state", "channel"))
+baseline_snrtheta_statechannel_esmmeans <- estimate_means(fit.baseline_snrtheta , by = c("state", "channel"))
+
+# posthoc 
+# compare channels for each state -- "simple effects"
+pairs(emmeans(fit.baseline_IAPF, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_densityalpha, ~state:channel, by="channel", p.adjust = "tukey"))
+pairs(emmeans(fit.baseline_snralpha, ~state:channel, by="channel", p.adjust = "tukey"))
+```
+#2 Plot 
+```{r}
+# wake NREM REM
+# average across nights for visualisation
+df_baseline_average <- df_baseline %>% 
+  select(!c(3:6)) %>% 
+  group_by(participant, state, channel) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE))
+df_baseline_average$state <- factor(df_baseline_average$state, order=TRUE,
+       levels= c("wake", "NREM", "REM")) 
+df_baseline_average$channel <- factor(df_baseline_average$channel, order=TRUE,
+       levels= c("frontal", "central", "parietal", "occipital"))
+
+# theta ----
+# density theta 
+densitytheta_topography <- ggplot(df_baseline_average, aes(x = channel, y = densitytheta, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("wake" = "#F0E442", "REM" = "#CC79A7", "NREM"="#009E73")) + 
+#   scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+#  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 3), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+   scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 3), expand = c(0, NA)) +
+  ylab("density(oscillations/min)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_densitytheta_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.3)) +
+  geom_point(data = subset(baseline_densitytheta_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.3)) +
+    geom_errorbar(data=subset(baseline_densitytheta_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0)) +
+  geom_point(data = subset(baseline_densitytheta_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0)) +
+      geom_errorbar(data=subset(baseline_densitytheta_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.3)) +
+  geom_point(data = subset(baseline_densitytheta_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.3)) 
+densitytheta_topography
+
+# ITPF theta 
+ITPF_topography <- ggplot(df_baseline_average, aes(x = channel, y = ITPF, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("wake" = "#F0E442", "REM" = "#CC79A7", "NREM"="#009E73")) + 
+    scale_y_continuous(limits = c(2, 6), breaks = seq(2, 6, 1), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("peak frequency (Hz)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_ITPF_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.3)) +
+  geom_point(data = subset(baseline_ITPF_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.3)) +
+    geom_errorbar(data=subset(baseline_ITPF_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0)) +
+  geom_point(data = subset(baseline_ITPF_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0)) +
+      geom_errorbar(data=subset(baseline_ITPF_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.3)) +
+  geom_point(data = subset(baseline_ITPF_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.3)) 
+ITPF_topography
+
+# alpha ----
+# density alpha 
+densityalpha_topography <- ggplot(df_baseline_average, aes(x = channel, y = densityalpha, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("wake" = "#F0E442", "REM" = "#CC79A7", "NREM"="#009E73")) + 
+  scale_y_continuous(limits = c(0, 40), breaks = seq(0, 40, 5), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("density(oscillations/min)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_densityalpha_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.3)) +
+  geom_point(data = subset(baseline_densityalpha_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.3)) +
+    geom_errorbar(data=subset(baseline_densityalpha_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0)) +
+  geom_point(data = subset(baseline_densityalpha_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0)) +
+      geom_errorbar(data=subset(baseline_densityalpha_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.3)) +
+  geom_point(data = subset(baseline_densityalpha_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.3)) 
+densityalpha_topography
+
+# IAPF alpha 
+IAPF_topography <- ggplot(df_baseline_average, aes(x = channel, y = IAPF, fill = state)) +
+geom_violin() +
+#colorBlindBlack8  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  scale_fill_manual(values = c("wake" = "#F0E442", "REM" = "#CC79A7", "NREM"="#009E73")) + 
+    scale_y_continuous(limits = c(6, 12), breaks = seq(6, 12, 1), expand = c(0, NA)) + # set scales to begin at , intervals of 3 until highest value , expand prevents padding at top and bottom of y axis so it will be in line with x axis
+  ylab("peak frequency (Hz)") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) +
+  theme(legend.position = "none") +
+  geom_errorbar(data=subset(baseline_IAPF_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = -0.3)) +
+  geom_point(data = subset(baseline_IAPF_statechannel_esmmeans, state == "wake"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = -0.3)) +
+    geom_errorbar(data=subset(baseline_IAPF_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0)) +
+  geom_point(data = subset(baseline_IAPF_statechannel_esmmeans, state == "NREM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0)) +
+      geom_errorbar(data=subset(baseline_IAPF_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean, ymin=Mean-SE, ymax=Mean+SE), width=0.1, lwd=0.5, position = position_nudge(x = 0.3)) +
+  geom_point(data = subset(baseline_IAPF_statechannel_esmmeans, state == "REM"), aes(x=channel, y=Mean),shape=21, size =1,  position = position_nudge(x = 0.3)) 
+IAPF_topography 
+
+```
+
+## Looking at the whole week, changes in phasic and tonic (Fig3, S7)
+```{r}
+# clear global environment 
+rm(list = ls())
+
+# Load data
+df_oscillations_week <- readRDS("df_oscillations_week_19Dec25.rds")
+
+# Factorise
+cols <- c("participant", "condition", "night", "order", "state", "channel")
+df_oscillations_week <- df_oscillations_week %>% mutate_at(cols, factor)
+factor(df_oscillations_week$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8"))
+```
+#1 lmes 
+```{r}
+df_oscillations_week <- df_oscillations_week %>% 
+  filter(state == "phasic" | state == "tonic") 
+
+# alpha: IAPF, density, amplitude -----
+# NB condition not used alone as a fixed effect due to the intention for model to see SE and SR baseline as "one"
+fit.q2_IAPF <- lmer(IAPF ~  channel + night*state + night:condition + condition:channel + state:night:condition + order + tst + IAPF_baseline + (1|participant), data=df_oscillations_week)
+anova.q2_IAPF  <-  anova(fit.q2_IAPF)
+anova.q2_IAPF
+
+fit.q2_densityalpha <- lmer(densityalpha ~ channel + night*state + night:condition +condition:channel + state:night:condition + tst + densityalpha_baseline + order +(1|participant), data=df_oscillations_week)
+anova.q2_densityalpha  <-  anova(fit.q2_densityalpha)
+anova.q2_densityalpha
+
+fit.q2_snralpha <- lmer(snralpha ~ channel + night*state + night:condition + condition:channel + state:night:condition + tst + snralpha_baseline + order +(1|participant), data=df_oscillations_week)
+anova.q2_snralpha  <-  anova(fit.q2_snralpha)
+anova.q2_snralpha
+
+# theta: ITPF, density, amplitude ----
+fit.q2_ITPF <- lmer(ITPF ~ channel + night*state + night:condition + condition:channel + state:night:condition + tst + ITPF_baseline + order +(1|participant), data=df_oscillations_week)
+anova.q2_ITPF  <-  anova(fit.q2_ITPF)
+anova.q2_ITPF
+
+fit.q2_densitytheta <- lmer(densitytheta ~ channel + night*state + night:condition + condition:channel + state:night:condition + tst + densitytheta_baseline + order +(1|participant), data=df_oscillations_week)
+anova.q2_densitytheta  <-  anova(fit.q2_densitytheta)
+anova.q2_densitytheta
+
+# outlier - remove
+df_oscillations_week[4125, "snrtheta"] <- NA
+
+fit.q2_snrtheta <- lmer(snrtheta ~ channel + night*state + night:condition +condition:channel + state:night:condition + tst + snrtheta_baseline + order +(1|participant), data=df_oscillations_week)
+anova.q2_snrtheta  <-  anova(fit.q2_snrtheta)
+anova.q2_snrtheta
+
+# estimated means
+IAPF.esmmeans <- estimate_means(fit.q2_IAPF , by = c( "condition", "state", "night"))
+densityalpha.esmmeans <- estimate_means(fit.q2_densityalpha , by = c( "condition", "state", "night"))
+snralpha.esmmeans <- estimate_means(fit.q2_snralpha , by = c( "condition",  "state", "night"))
+
+ITPF.esmmeans <- estimate_means(fit.q2_ITPF , by = c( "condition",  "state", "night"))
+densitytheta.esmmeans <- estimate_means(fit.q2_densitytheta , by = c( "condition",  "state", "night"))
+snrtheta.esmmeans <- estimate_means(fit.q2_snrtheta , by = c( "condition",  "state", "night"))
+```
+#2 Posthoc 
+```{r}
+# compare between conditions, for each state and night for anovas that show significant 3 way interaction
+pairs(emmeans(fit.q2_densitytheta, ~night:state:condition), simple="condition", p.adjust = "tukey")
+pairs(emmeans(fit.q2_snralpha, ~night:state:condition), simple="condition", p.adjust = "tukey")
+pairs(emmeans(fit.q2_IAPF, ~night:state:condition), simple="condition", p.adjust = "tukey")
+pairs(emmeans(fit.q2_densityalpha, ~night:state:condition), simple="condition", p.adjust = "tukey")
+
+```
+#3 Plot
+```{r}
+## alpha ----
+#  IAPF 
+ IAPF_week <- ggplot(IAPF.esmmeans, aes(x = night, y = Mean, colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ # snralpha_week <- ggplot(snralpha.esmmeans, aes(x = night, y = Mean, colour=condition, group= condition, shape=state)) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(8, 8.5), breaks = seq(8,8.5,0.1), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("peak frequency (Hz)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+ IAPF_week
+ 
+# density alpha 
+densityalpha_week <- ggplot(densityalpha.esmmeans, aes(x = night, y = Mean, colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ # snralpha_week <- ggplot(snralpha.esmmeans, aes(x = night, y = Mean, colour=condition, group= condition, shape=state)) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(19.5, 23), breaks = seq(19.5,23,0.5), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("alpha density (oscillations/min)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+densityalpha_week
+
+# snr alpha
+ snralpha_week <- ggplot(snralpha.esmmeans, aes(x = night, y = Mean, colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ # snralpha_week <- ggplot(snralpha.esmmeans, aes(x = night, y = Mean, colour=condition, group= condition, shape=state)) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(2.1, 2.35), breaks = seq(2.1, 2.35, 0.05), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("alpha amplitude (μV)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+ snralpha_week
+ 
+## theta ----
+ITPF_week <- ggplot(ITPF.esmmeans, aes(x = night, y = Mean, colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ # snralpha_week <- ggplot(snralpha.esmmeans, aes(x = night, y = Mean, colour=condition, group= condition, shape=state)) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(3.8, 4.6), breaks = seq(3.8,4.6,0.1), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("theta peak frequency (Hz)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+ITPF_week
+
+# density theta 
+densitytheta_week <- ggplot(densitytheta.esmmeans, aes(x = night, y = Mean,  colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ # snralpha_week <- ggplot(densitytheta.esmmeans, aes(x = night, y = Mean, colour=condition, group= condition, shape=state)) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(7.3,8.8), breaks = seq(7.3, 8.8, 0.3), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("density theta (oscillations/min)") +
+   scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+densitytheta_week
+
+# snr theta
+ snrtheta_week <- ggplot(snrtheta.esmmeans, aes(x = night, y = Mean, colour=state, shape=condition, group=condition)) +
+     facet_grid(~state) +
+ geom_line() +
+     geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), linetype=1, width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+  geom_point(aes(colour=state),fill="white", size=2, position = position_dodge(0.3)) +
+  #geom_point(aes(colour=condition),fill="white", size=2, position = position_dodge(0.3)) +
+  theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_y_continuous(limits = c(1.9, 2.1), breaks = seq(1.9, 2.1, 0.05), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) + 
+  #scale_colour_prism(palette = "colorblind_safe") +
+  #scale_fill_prism(palette = "colorblind_safe") +
+  xlab("night") +  ylab("theta amplitude (μV)") +
+    scale_shape_manual(values = c(16,21)) +
+   theme(legend.position="none") 
+ snrtheta_week
+ 
+```
+
