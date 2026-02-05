@@ -1,0 +1,648 @@
+---
+title: "to produce table from raw data for statistical analysis - overnight modulation"
+output: html_notebook
+---
+## Import functions 
+```{r}
+library(lmerTest)
+library(emmeans)
+library(sjstats)
+library(lme4)
+library(tidyverse)
+library(broom)
+library(devtools)
+library(ggpubr)
+library(nplyr)
+```    
+# Create dataset 1: Overnight (last and first NREM)
+```{r}
+df <- read_csv("aperiodic_dyn_table_all_sprint_16-Dec-2025.csv", show_col_types = FALSE)
+tst_allsub <- read_csv("tst_allsub.csv", show_col_types = FALSE)
+
+# put in order of treatment: SE-> SR =1, SR-> SE = 2
+df <- df %>%  
+mutate(order = ifelse(participant=="AFOSR_AF0182"|participant=="AFOSR_AF0233"|participant=="AFOSR_AF0205"|participant=="AFOSR_AF0256"|participant=="AFOSR_AF0280"|participant=="AFOSR_AF0286"|participant=="AFOSR_AF0314"|participant=="AFOSR_AF0320"|participant=="AFOSR_AF0355"|participant=="AFOSR_AF0361"|participant=="AFOSR_AF0378"|participant=="AFOSR_AF0386"|participant=="AFOSR_AF0388"|participant=="AFOSR_AF0399"|participant=="AFOSR_AF0465"|participant=="AFOSR_AF0467"|participant=="AFOSR_AF0468"|participant=="AFOSR_AF0469"|participant=="AFOSR_AF0490"|participant=="AFOSR_AF0496",1,2)) %>% 
+mutate_all(~ifelse(is.na(.), NaN, .))
+
+# put in tst 
+df <- df %>%  
+  group_by(participant, channel) %>% 
+  nest() 
+
+# create empty df for loops
+df_AF0165_all <- data.frame()
+df_AF0170_all <- data.frame()
+df_AF0182_all <- data.frame()
+df_AF0205_all <- data.frame()
+df_AF0214_all <- data.frame()
+df_AF0233_all <- data.frame()
+df_AF0250_all <- data.frame()
+df_AF0256_all <- data.frame()
+df_AF0280_all <- data.frame()
+df_AF0286_all <- data.frame()
+df_AF0288_all <- data.frame()
+df_AF0295_all <- data.frame()
+df_AF0307_all <- data.frame()
+df_AF0309_all <- data.frame()
+df_AF0314_all <- data.frame()
+df_AF0318_all <- data.frame()
+df_AF0320_all <- data.frame()
+df_AF0336_all <- data.frame()
+df_AF0355_all <- data.frame()
+df_AF0361_all <- data.frame()
+df_AF0378_all <- data.frame()
+df_AF0386_all <- data.frame()
+df_AF0388_all <- data.frame()
+df_AF0399_all <- data.frame()
+df_AF0406_all <- data.frame()
+df_AF0409_all <- data.frame()
+df_AF0411_all <- data.frame()
+df_AF0421_all <- data.frame()
+df_AF0431_all <- data.frame()
+df_AF0438_all <- data.frame()
+df_AF0465_all <- data.frame()
+df_AF0467_all <- data.frame()
+df_AF0468_all <- data.frame()
+df_AF0469_all <- data.frame()
+df_AF0490_all <- data.frame()
+df_AF0496_all <- data.frame()
+
+# loop to add tst (taken from tst_allsub table and create df which adds at every loop, somehow it doesnt just add into old df which was what I wanted!)
+for (i in 1:nrow(df)) {
+  if(df[[1]][[i]] =="AFOSR_AF0165"){
+    sub1=tst_allsub[,1, drop=FALSE] # drop=False allows u to collect one column as it is instead of making it into list automatically
+    df_AF0165 <- cbind(df$data[[i]], sub1)
+    df_AF0165_all <- rbind(df_AF0165_all, df_AF0165)
+  } else if(df[[1]][[i]] =="AFOSR_AF0170"){
+      sub2=tst_allsub[,2, drop=FALSE]
+      df_AF0170 <- cbind(df$data[[i]], sub2)
+      df_AF0170_all <- rbind(df_AF0170_all, df_AF0170)
+  } else if(df[[1]][[i]] =="AFOSR_AF0182"){
+     sub3=tst_allsub[,3, drop=FALSE]
+    df_AF0182 <- cbind(df$data[[i]], sub3)
+    df_AF0182_all <- rbind(df_AF0182_all, df_AF0182)
+  } else if(df[[1]][[i]] =="AFOSR_AF0205"){
+     sub4=tst_allsub[,4, drop=FALSE]
+    df_AF0205 <- cbind(df$data[[i]], sub4)
+    df_AF0205_all <- rbind(df_AF0205_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0214"){
+         sub5=tst_allsub[,5, drop=FALSE]
+    df_AF0214 <- cbind(df$data[[i]], sub5)
+    df_AF0214_all <- rbind(df_AF0214_all, df_AF0214)
+  } else if(df[[1]][[i]] =="AFOSR_AF0233"){
+         sub6=tst_allsub[,6, drop=FALSE]
+    df_AF0233 <- cbind(df$data[[i]], sub6)
+    df_AF0233_all <- rbind(df_AF0233_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0250"){
+         sub7=tst_allsub[,7, drop=FALSE]
+    df_AF0250 <- cbind(df$data[[i]], sub7)
+    df_AF0250_all <- rbind(df_AF0250_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0256"){
+        sub8=tst_allsub[,8, drop=FALSE]
+    df_AF0256 <- cbind(df$data[[i]], sub8)
+    df_AF0256_all <- rbind(df_AF0256_all, df_AF0256)
+  } else if(df[[1]][[i]] =="AFOSR_AF0280"){
+         sub9=tst_allsub[,9, drop=FALSE]
+    df_AF0280 <- cbind(df$data[[i]], sub9)
+    df_AF0280_all <- rbind(df_AF0280_all, df_AF0280)
+  } else if(df[[1]][[i]] =="AFOSR_AF0286"){
+        sub10=tst_allsub[,10, drop=FALSE]
+    df_AF0286 <- cbind(df$data[[i]], sub10)
+    df_AF0286_all <- rbind(df_AF0286_all, df_AF0286)
+  } else if(df[[1]][[i]] =="AFOSR_AF0288"){
+         sub11=tst_allsub[,11, drop=FALSE]
+    df_AF0288 <- cbind(df$data[[i]], sub11)
+    df_AF0288_all <- rbind(df_AF0288_all, df_AF0288)
+  } else if(df[[1]][[i]] =="AFOSR_AF0295"){
+        sub12=tst_allsub[,12, drop=FALSE]
+    df_AF0295 <- cbind(df$data[[i]], sub12)
+    df_AF0295_all <- rbind(df_AF0295_all, df_AF0295)
+  } else if(df[[1]][[i]] =="AFOSR_AF0307"){
+        sub13=tst_allsub[,13, drop=FALSE]
+    df_AF0307 <- cbind(df$data[[i]], sub13)
+    df_AF0307_all <- rbind(df_AF0307_all, df_AF0307)
+  } else if(df[[1]][[i]] =="AFOSR_AF0309"){
+         sub14=tst_allsub[,14, drop=FALSE]
+    df_AF0309 <- cbind(df$data[[i]], sub14)
+    df_AF0309_all <- rbind(df_AF0309_all, df_AF0309)
+  } else if(df[[1]][[i]] =="AFOSR_AF0314"){
+        sub15=tst_allsub[,15, drop=FALSE]
+    df_AF0314 <- cbind(df$data[[i]], sub15)
+    df_AF0314_all <- rbind(df_AF0314_all, df_AF0314)
+  } else if(df[[1]][[i]] =="AFOSR_AF0318"){
+         sub16=tst_allsub[,16, drop=FALSE]
+    df_AF0318 <- cbind(df$data[[i]], sub16)
+    df_AF0318_all <- rbind(df_AF0318_all, df_AF0318)
+  } else if(df[[1]][[i]] =="AFOSR_AF0320"){
+         sub17=tst_allsub[,17, drop=FALSE]
+    df_AF0320 <- cbind(df$data[[i]], sub17)
+    df_AF0320_all <- rbind(df_AF0320_all, df_AF0320)
+
+  } else if(df[[1]][[i]] =="AFOSR_AF0336"){
+         sub18=tst_allsub[,18, drop=FALSE]
+    df_AF0336 <- cbind(df$data[[i]], sub18)
+    df_AF0336_all <- rbind(df_AF0336_all, df_AF0336)
+  } else if(df[[1]][[i]] =="AFOSR_AF0355"){
+         sub19=tst_allsub[,19, drop=FALSE]
+    df_AF0355 <- cbind(df$data[[i]], sub19)
+    df_AF0355_all <- rbind(df_AF0355_all, df_AF0355)
+  } else if(df[[1]][[i]] =="AFOSR_AF0361"){
+        sub20=tst_allsub[,20, drop=FALSE]
+    df_AF0361 <- cbind(df$data[[i]], sub20)
+    df_AF0361_all <- rbind(df_AF0361_all, df_AF0361)
+  } else if(df[[1]][[i]] =="AFOSR_AF0378"){
+         sub21=tst_allsub[,21, drop=FALSE]
+    df_AF0378 <- cbind(df$data[[i]], sub21)
+    df_AF0378_all <- rbind(df_AF0378_all, df_AF0378)
+  } else if(df[[1]][[i]] =="AFOSR_AF0386"){
+         sub22=tst_allsub[,22, drop=FALSE]
+    df_AF0386 <- cbind(df$data[[i]], sub22)
+    df_AF0386_all <- rbind(df_AF0386_all, df_AF0386)
+  } else if(df[[1]][[i]] =="AFOSR_AF0388"){
+         sub23=tst_allsub[,23, drop=FALSE]
+    df_AF0388 <- cbind(df$data[[i]], sub23)
+    df_AF0388_all <- rbind(df_AF0388_all, df_AF0388)
+  } else if(df[[1]][[i]] =="AFOSR_AF0399"){
+         sub24=tst_allsub[,24, drop=FALSE]
+    df_AF0399 <- cbind(df$data[[i]], sub24)
+    df_AF0399_all <- rbind(df_AF0399_all, df_AF0399)
+  } else if(df[[1]][[i]] =="AFOSR_AF0406"){
+         sub25=tst_allsub[,25, drop=FALSE]
+    df_AF0406 <- cbind(df$data[[i]], sub25)
+    df_AF0406_all <- rbind(df_AF0406_all, df_AF0406)
+  } else if(df[[1]][[i]] =="AFOSR_AF0409"){
+         sub26=tst_allsub[,26, drop=FALSE]
+    df_AF0409 <- cbind(df$data[[i]], sub26)
+    df_AF0409_all <- rbind(df_AF0409_all, df_AF0409)
+  } else if(df[[1]][[i]] =="AFOSR_AF0411"){
+         sub27=tst_allsub[,27, drop=FALSE]
+    df_AF0411 <- cbind(df$data[[i]], sub27)
+    df_AF0411_all <- rbind(df_AF0411_all, df_AF0411)
+  } else if(df[[1]][[i]] =="AFOSR_AF0421"){
+         sub28=tst_allsub[,28, drop=FALSE]
+    df_AF0421 <- cbind(df$data[[i]], sub28)
+    df_AF0421_all <- rbind(df_AF0421_all, df_AF0421)
+  } else if(df[[1]][[i]] =="AFOSR_AF0431"){
+         sub29=tst_allsub[,29, drop=FALSE]
+    df_AF0431 <- cbind(df$data[[i]], sub29)
+    df_AF0431_all <- rbind(df_AF0431_all, df_AF0431)
+  } else if(df[[1]][[i]] =="AFOSR_AF0438"){
+         sub30=tst_allsub[,30, drop=FALSE]
+    df_AF0438 <- cbind(df$data[[i]], sub30)
+    df_AF0438_all <- rbind(df_AF0438_all, df_AF0438)
+  } else if(df[[1]][[i]] =="AFOSR_AF0465"){
+         sub31=tst_allsub[,31, drop=FALSE]
+    df_AF0465 <- cbind(df$data[[i]], sub31)
+    df_AF0465_all <- rbind(df_AF0465_all, df_AF0465)
+  } else if(df[[1]][[i]] =="AFOSR_AF0467"){
+         sub32=tst_allsub[,32, drop=FALSE]
+    df_AF0467 <- cbind(df$data[[i]], sub32)
+    df_AF0467_all <- rbind(df_AF0467_all, df_AF0467)
+  } else if(df[[1]][[i]] =="AFOSR_AF0468"){
+         sub33=tst_allsub[,33, drop=FALSE]
+    df_AF0468 <- cbind(df$data[[i]], sub33)
+    df_AF0468_all <- rbind(df_AF0468_all, df_AF0468)
+  } else if(df[[1]][[i]] =="AFOSR_AF0469"){
+        sub34=tst_allsub[,34, drop=FALSE]
+    df_AF0469 <- cbind(df$data[[i]], sub34)
+    df_AF0469_all <- rbind(df_AF0469_all, df_AF0469)
+  } else if(df[[1]][[i]] =="AFOSR_AF0490"){
+          sub35=tst_allsub[,35, drop=FALSE]
+    df_AF0490 <- cbind(df$data[[i]], sub35)
+    df_AF0490_all <- rbind(df_AF0490_all, df_AF0490)
+  } else if(df[[1]][[i]] =="AFOSR_AF0496"){   
+     sub36=tst_allsub[,36, drop=FALSE]
+    df_AF0496 <- cbind(df$data[[i]], sub36)
+    df_AF0496_all <- rbind(df_AF0496_all, df_AF0496)
+  }
+}
+
+# change column names
+colnames(df_AF0165_all)[100] <- 'tst'
+colnames(df_AF0170_all)[100] <- 'tst'
+colnames(df_AF0182_all)[100] <- 'tst'
+colnames(df_AF0205_all)[100] <- 'tst'
+colnames(df_AF0214_all)[100] <- 'tst'
+colnames(df_AF0233_all)[100] <- 'tst'
+colnames(df_AF0250_all)[100] <- 'tst'
+colnames(df_AF0256_all)[100] <- 'tst'
+colnames(df_AF0280_all)[100] <- 'tst'
+colnames(df_AF0286_all)[100] <- 'tst'
+colnames(df_AF0288_all)[100] <- 'tst'
+colnames(df_AF0295_all)[100] <- 'tst'
+colnames(df_AF0307_all)[100] <- 'tst'
+colnames(df_AF0309_all)[100] <- 'tst'
+colnames(df_AF0314_all)[100] <- 'tst'
+colnames(df_AF0318_all)[100] <- 'tst'
+colnames(df_AF0320_all)[100] <- 'tst'
+colnames(df_AF0336_all)[100] <- 'tst'
+colnames(df_AF0355_all)[100] <- 'tst'
+colnames(df_AF0361_all)[100] <- 'tst'
+colnames(df_AF0378_all)[100] <- 'tst'
+colnames(df_AF0386_all)[100] <- 'tst'
+colnames(df_AF0388_all)[100] <- 'tst'
+colnames(df_AF0399_all)[100] <- 'tst'
+colnames(df_AF0406_all)[100] <- 'tst'
+colnames(df_AF0409_all)[100] <- 'tst'
+colnames(df_AF0411_all)[100] <- 'tst'
+colnames(df_AF0421_all)[100] <- 'tst'
+colnames(df_AF0431_all)[100] <- 'tst'
+colnames(df_AF0438_all)[100] <- 'tst'
+colnames(df_AF0465_all)[100] <- 'tst'
+colnames(df_AF0467_all)[100] <- 'tst'
+colnames(df_AF0468_all)[100] <- 'tst'
+colnames(df_AF0469_all)[100] <- 'tst'
+colnames(df_AF0490_all)[100] <- 'tst'
+colnames(df_AF0496_all)[100] <- 'tst'
+
+df <- df %>% 
+  unnest()
+partcipant_list <- as.data.frame(df[[1]])
+rest_of_df <- bind_rows(df_AF0165_all, df_AF0170_all, df_AF0182_all, df_AF0205_all, df_AF0214_all, df_AF0233_all,
+                    df_AF0250_all, df_AF0256_all, df_AF0280_all, df_AF0286_all, df_AF0288_all, df_AF0295_all,
+                    df_AF0307_all, df_AF0309_all, df_AF0314_all, df_AF0318_all, df_AF0320_all, df_AF0336_all,
+                    df_AF0355_all, df_AF0361_all, df_AF0378_all, df_AF0386_all, df_AF0388_all, df_AF0399_all, 
+                    df_AF0406_all, df_AF0409_all, df_AF0411_all, df_AF0421_all, df_AF0431_all, df_AF0438_all,
+                    df_AF0465_all, df_AF0467_all, df_AF0468_all, df_AF0469_all, df_AF0490_all, df_AF0496_all)
+
+tst <- rest_of_df$tst
+df <- add_column(df, tst, .after = 4)
+```
+# Average channels
+```{r}
+# average channels
+frontal <- rep("frontal", each=648) %>%  as.data.frame()
+central <- rep("central", each=648) %>%  as.data.frame()
+occipital <- rep("occipital", each=648) %>%  as.data.frame()
+parietal <- rep("parietal", each=648) %>%  as.data.frame()
+
+df_frontal <- df %>% 
+  filter(channel=="F3" | channel =="F4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_frontal <- add_column(df_frontal, frontal, .after = 3)
+colnames(df_frontal)[4] <- 'channel'
+  
+df_central <- df %>% 
+  filter(channel=="C3" | channel =="C4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_central <- add_column(df_central, central, .after = 3)
+colnames(df_central)[4] <- 'channel'
+
+df_parietal <- df %>% 
+  filter(channel=="P3" | channel =="P4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_parietal <- add_column(df_parietal, parietal, .after = 3)
+colnames(df_parietal)[4] <- 'channel'
+
+df_occipital <- df %>% 
+  filter(channel=="O1" | channel =="O2") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_occipital <- add_column(df_occipital, occipital, .after = 3)
+colnames(df_occipital)[4] <- 'channel'
+
+df <- rbind(df_frontal, df_central, df_parietal, df_occipital)  
+df <- df %>% relocate(order, .after =tst)
+
+cols_to_change <- (names(df)[7:86])
+df[cols_to_change] <- df[cols_to_change] * -1
+
+rm(list = setdiff(ls(), "df"))  # Remove all but df
+
+#saveRDS(df, "C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/FINAL/excitability/for paper/overnight/df_baseline_overnightslopechanges_1.rds")
+```
+
+# Create dataset 2: Triplets (pre and post NREM)
+```{r}
+df <- read_csv("aperiodic_osc_dyn_triplet_table_all_sprint_16-Dec-2025.csv", show_col_types = FALSE)
+```
+# Average cycles and put in tst and order
+```{r}
+df_averaged_cycles <- df %>% 
+  group_by(participant, night, condition, channel) %>% 
+  dplyr::summarise(across(everything(), mean, na.rm=TRUE)) %>% 
+  dplyr::select(!cycle) 
+
+# put in tst
+df <- df_averaged_cycles %>%  
+  group_by(participant, channel) %>% 
+  nest() 
+
+tst_allsub <- read_csv("tst_allsub.csv", show_col_types = FALSE)
+# create empty df for loops
+df_AF0165_all <- data.frame()
+df_AF0170_all <- data.frame()
+df_AF0182_all <- data.frame()
+df_AF0205_all <- data.frame()
+df_AF0214_all <- data.frame()
+df_AF0233_all <- data.frame()
+df_AF0250_all <- data.frame()
+df_AF0256_all <- data.frame()
+df_AF0280_all <- data.frame()
+df_AF0286_all <- data.frame()
+df_AF0288_all <- data.frame()
+df_AF0295_all <- data.frame()
+df_AF0307_all <- data.frame()
+df_AF0309_all <- data.frame()
+df_AF0314_all <- data.frame()
+df_AF0318_all <- data.frame()
+df_AF0320_all <- data.frame()
+df_AF0336_all <- data.frame()
+df_AF0355_all <- data.frame()
+df_AF0361_all <- data.frame()
+df_AF0378_all <- data.frame()
+df_AF0386_all <- data.frame()
+df_AF0388_all <- data.frame()
+df_AF0399_all <- data.frame()
+df_AF0406_all <- data.frame()
+df_AF0409_all <- data.frame()
+df_AF0411_all <- data.frame()
+df_AF0421_all <- data.frame()
+df_AF0431_all <- data.frame()
+df_AF0438_all <- data.frame()
+df_AF0465_all <- data.frame()
+df_AF0467_all <- data.frame()
+df_AF0468_all <- data.frame()
+df_AF0469_all <- data.frame()
+df_AF0490_all <- data.frame()
+df_AF0496_all <- data.frame()
+
+# loop to add tst (taken from tst_allsub table and create df which adds at every loop, somehow it doesnt just add into old df which was what I wanted!)
+for (i in 1:nrow(df)) {
+  if(df[[1]][[i]] =="AFOSR_AF0165"){
+    sub1=tst_allsub[,1, drop=FALSE] # drop=False allows u to collect one column as it is instead of making it into list automatically
+    df_AF0165 <- cbind(df$data[[i]], sub1)
+    df_AF0165_all <- rbind(df_AF0165_all, df_AF0165)
+  } else if(df[[1]][[i]] =="AFOSR_AF0170"){
+      sub2=tst_allsub[,2, drop=FALSE]
+      df_AF0170 <- cbind(df$data[[i]], sub2)
+      df_AF0170_all <- rbind(df_AF0170_all, df_AF0170)
+  } else if(df[[1]][[i]] =="AFOSR_AF0182"){
+     sub3=tst_allsub[,3, drop=FALSE]
+    df_AF0182 <- cbind(df$data[[i]], sub3)
+    df_AF0182_all <- rbind(df_AF0182_all, df_AF0182)
+  } else if(df[[1]][[i]] =="AFOSR_AF0205"){
+     sub4=tst_allsub[,4, drop=FALSE]
+    df_AF0205 <- cbind(df$data[[i]], sub4)
+    df_AF0205_all <- rbind(df_AF0205_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0214"){
+         sub5=tst_allsub[,5, drop=FALSE]
+    df_AF0214 <- cbind(df$data[[i]], sub5)
+    df_AF0214_all <- rbind(df_AF0214_all, df_AF0214)
+  } else if(df[[1]][[i]] =="AFOSR_AF0233"){
+         sub6=tst_allsub[,6, drop=FALSE]
+    df_AF0233 <- cbind(df$data[[i]], sub6)
+    df_AF0233_all <- rbind(df_AF0233_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0250"){
+         sub7=tst_allsub[,7, drop=FALSE]
+    df_AF0250 <- cbind(df$data[[i]], sub7)
+    df_AF0250_all <- rbind(df_AF0250_all, df_AF0205)
+  } else if(df[[1]][[i]] =="AFOSR_AF0256"){
+        sub8=tst_allsub[,8, drop=FALSE]
+    df_AF0256 <- cbind(df$data[[i]], sub8)
+    df_AF0256_all <- rbind(df_AF0256_all, df_AF0256)
+  } else if(df[[1]][[i]] =="AFOSR_AF0280"){
+         sub9=tst_allsub[,9, drop=FALSE]
+    df_AF0280 <- cbind(df$data[[i]], sub9)
+    df_AF0280_all <- rbind(df_AF0280_all, df_AF0280)
+  } else if(df[[1]][[i]] =="AFOSR_AF0286"){
+        sub10=tst_allsub[,10, drop=FALSE]
+    df_AF0286 <- cbind(df$data[[i]], sub10)
+    df_AF0286_all <- rbind(df_AF0286_all, df_AF0286)
+  } else if(df[[1]][[i]] =="AFOSR_AF0288"){
+         sub11=tst_allsub[,11, drop=FALSE]
+    df_AF0288 <- cbind(df$data[[i]], sub11)
+    df_AF0288_all <- rbind(df_AF0288_all, df_AF0288)
+  } else if(df[[1]][[i]] =="AFOSR_AF0295"){
+        sub12=tst_allsub[,12, drop=FALSE]
+    df_AF0295 <- cbind(df$data[[i]], sub12)
+    df_AF0295_all <- rbind(df_AF0295_all, df_AF0295)
+  } else if(df[[1]][[i]] =="AFOSR_AF0307"){
+        sub13=tst_allsub[,13, drop=FALSE]
+    df_AF0307 <- cbind(df$data[[i]], sub13)
+    df_AF0307_all <- rbind(df_AF0307_all, df_AF0307)
+  } else if(df[[1]][[i]] =="AFOSR_AF0309"){
+         sub14=tst_allsub[,14, drop=FALSE]
+    df_AF0309 <- cbind(df$data[[i]], sub14)
+    df_AF0309_all <- rbind(df_AF0309_all, df_AF0309)
+  } else if(df[[1]][[i]] =="AFOSR_AF0314"){
+        sub15=tst_allsub[,15, drop=FALSE]
+    df_AF0314 <- cbind(df$data[[i]], sub15)
+    df_AF0314_all <- rbind(df_AF0314_all, df_AF0314)
+  } else if(df[[1]][[i]] =="AFOSR_AF0318"){
+         sub16=tst_allsub[,16, drop=FALSE]
+    df_AF0318 <- cbind(df$data[[i]], sub16)
+    df_AF0318_all <- rbind(df_AF0318_all, df_AF0318)
+  } else if(df[[1]][[i]] =="AFOSR_AF0320"){
+         sub17=tst_allsub[,17, drop=FALSE]
+    df_AF0320 <- cbind(df$data[[i]], sub17)
+    df_AF0320_all <- rbind(df_AF0320_all, df_AF0320)
+
+  } else if(df[[1]][[i]] =="AFOSR_AF0336"){
+         sub18=tst_allsub[,18, drop=FALSE]
+    df_AF0336 <- cbind(df$data[[i]], sub18)
+    df_AF0336_all <- rbind(df_AF0336_all, df_AF0336)
+  } else if(df[[1]][[i]] =="AFOSR_AF0355"){
+         sub19=tst_allsub[,19, drop=FALSE]
+    df_AF0355 <- cbind(df$data[[i]], sub19)
+    df_AF0355_all <- rbind(df_AF0355_all, df_AF0355)
+  } else if(df[[1]][[i]] =="AFOSR_AF0361"){
+        sub20=tst_allsub[,20, drop=FALSE]
+    df_AF0361 <- cbind(df$data[[i]], sub20)
+    df_AF0361_all <- rbind(df_AF0361_all, df_AF0361)
+  } else if(df[[1]][[i]] =="AFOSR_AF0378"){
+         sub21=tst_allsub[,21, drop=FALSE]
+    df_AF0378 <- cbind(df$data[[i]], sub21)
+    df_AF0378_all <- rbind(df_AF0378_all, df_AF0378)
+  } else if(df[[1]][[i]] =="AFOSR_AF0386"){
+         sub22=tst_allsub[,22, drop=FALSE]
+    df_AF0386 <- cbind(df$data[[i]], sub22)
+    df_AF0386_all <- rbind(df_AF0386_all, df_AF0386)
+  } else if(df[[1]][[i]] =="AFOSR_AF0388"){
+         sub23=tst_allsub[,23, drop=FALSE]
+    df_AF0388 <- cbind(df$data[[i]], sub23)
+    df_AF0388_all <- rbind(df_AF0388_all, df_AF0388)
+  } else if(df[[1]][[i]] =="AFOSR_AF0399"){
+         sub24=tst_allsub[,24, drop=FALSE]
+    df_AF0399 <- cbind(df$data[[i]], sub24)
+    df_AF0399_all <- rbind(df_AF0399_all, df_AF0399)
+  } else if(df[[1]][[i]] =="AFOSR_AF0406"){
+         sub25=tst_allsub[,25, drop=FALSE]
+    df_AF0406 <- cbind(df$data[[i]], sub25)
+    df_AF0406_all <- rbind(df_AF0406_all, df_AF0406)
+  } else if(df[[1]][[i]] =="AFOSR_AF0409"){
+         sub26=tst_allsub[,26, drop=FALSE]
+    df_AF0409 <- cbind(df$data[[i]], sub26)
+    df_AF0409_all <- rbind(df_AF0409_all, df_AF0409)
+  } else if(df[[1]][[i]] =="AFOSR_AF0411"){
+         sub27=tst_allsub[,27, drop=FALSE]
+    df_AF0411 <- cbind(df$data[[i]], sub27)
+    df_AF0411_all <- rbind(df_AF0411_all, df_AF0411)
+  } else if(df[[1]][[i]] =="AFOSR_AF0421"){
+         sub28=tst_allsub[,28, drop=FALSE]
+    df_AF0421 <- cbind(df$data[[i]], sub28)
+    df_AF0421_all <- rbind(df_AF0421_all, df_AF0421)
+  } else if(df[[1]][[i]] =="AFOSR_AF0431"){
+         sub29=tst_allsub[,29, drop=FALSE]
+    df_AF0431 <- cbind(df$data[[i]], sub29)
+    df_AF0431_all <- rbind(df_AF0431_all, df_AF0431)
+  } else if(df[[1]][[i]] =="AFOSR_AF0438"){
+         sub30=tst_allsub[,30, drop=FALSE]
+    df_AF0438 <- cbind(df$data[[i]], sub30)
+    df_AF0438_all <- rbind(df_AF0438_all, df_AF0438)
+  } else if(df[[1]][[i]] =="AFOSR_AF0465"){
+         sub31=tst_allsub[,31, drop=FALSE]
+    df_AF0465 <- cbind(df$data[[i]], sub31)
+    df_AF0465_all <- rbind(df_AF0465_all, df_AF0465)
+  } else if(df[[1]][[i]] =="AFOSR_AF0467"){
+         sub32=tst_allsub[,32, drop=FALSE]
+    df_AF0467 <- cbind(df$data[[i]], sub32)
+    df_AF0467_all <- rbind(df_AF0467_all, df_AF0467)
+  } else if(df[[1]][[i]] =="AFOSR_AF0468"){
+         sub33=tst_allsub[,33, drop=FALSE]
+    df_AF0468 <- cbind(df$data[[i]], sub33)
+    df_AF0468_all <- rbind(df_AF0468_all, df_AF0468)
+  } else if(df[[1]][[i]] =="AFOSR_AF0469"){
+        sub34=tst_allsub[,34, drop=FALSE]
+    df_AF0469 <- cbind(df$data[[i]], sub34)
+    df_AF0469_all <- rbind(df_AF0469_all, df_AF0469)
+  } else if(df[[1]][[i]] =="AFOSR_AF0490"){
+          sub35=tst_allsub[,35, drop=FALSE]
+    df_AF0490 <- cbind(df$data[[i]], sub35)
+    df_AF0490_all <- rbind(df_AF0490_all, df_AF0490)
+  } else if(df[[1]][[i]] =="AFOSR_AF0496"){   
+     sub36=tst_allsub[,36, drop=FALSE]
+    df_AF0496 <- cbind(df$data[[i]], sub36)
+    df_AF0496_all <- rbind(df_AF0496_all, df_AF0496)
+  }
+}
+
+# change column names
+colnames(df_AF0165_all)[72] <- 'tst'
+colnames(df_AF0170_all)[72] <- 'tst'
+colnames(df_AF0182_all)[72] <- 'tst'
+colnames(df_AF0205_all)[72] <- 'tst'
+colnames(df_AF0214_all)[72] <- 'tst'
+colnames(df_AF0233_all)[72] <- 'tst'
+colnames(df_AF0250_all)[72] <- 'tst'
+colnames(df_AF0256_all)[72] <- 'tst'
+colnames(df_AF0280_all)[72] <- 'tst'
+colnames(df_AF0286_all)[72] <- 'tst'
+colnames(df_AF0288_all)[72] <- 'tst'
+colnames(df_AF0295_all)[72] <- 'tst'
+colnames(df_AF0307_all)[72] <- 'tst'
+colnames(df_AF0309_all)[72] <- 'tst'
+colnames(df_AF0314_all)[72] <- 'tst'
+colnames(df_AF0318_all)[72] <- 'tst'
+colnames(df_AF0320_all)[72] <- 'tst'
+colnames(df_AF0336_all)[72] <- 'tst'
+colnames(df_AF0355_all)[72] <- 'tst'
+colnames(df_AF0361_all)[72] <- 'tst'
+colnames(df_AF0378_all)[72] <- 'tst'
+colnames(df_AF0386_all)[72] <- 'tst'
+colnames(df_AF0388_all)[72] <- 'tst'
+colnames(df_AF0399_all)[72] <- 'tst'
+colnames(df_AF0406_all)[72] <- 'tst'
+colnames(df_AF0409_all)[72] <- 'tst'
+colnames(df_AF0411_all)[72] <- 'tst'
+colnames(df_AF0421_all)[72] <- 'tst'
+colnames(df_AF0431_all)[72] <- 'tst'
+colnames(df_AF0438_all)[72] <- 'tst'
+colnames(df_AF0465_all)[72] <- 'tst'
+colnames(df_AF0467_all)[72] <- 'tst'
+colnames(df_AF0468_all)[72] <- 'tst'
+colnames(df_AF0469_all)[72] <- 'tst'
+colnames(df_AF0490_all)[72] <- 'tst'
+colnames(df_AF0496_all)[72] <- 'tst'
+
+df <- df %>% 
+  unnest()
+partcipant_list <- as.data.frame(df[[1]])
+rest_of_df <- bind_rows(df_AF0165_all, df_AF0170_all, df_AF0182_all, df_AF0205_all, df_AF0214_all, df_AF0233_all,
+                    df_AF0250_all, df_AF0256_all, df_AF0280_all, df_AF0286_all, df_AF0288_all, df_AF0295_all,
+                    df_AF0307_all, df_AF0309_all, df_AF0314_all, df_AF0318_all, df_AF0320_all, df_AF0336_all,
+                    df_AF0355_all, df_AF0361_all, df_AF0378_all, df_AF0386_all, df_AF0388_all, df_AF0399_all, 
+                    df_AF0406_all, df_AF0409_all, df_AF0411_all, df_AF0421_all, df_AF0431_all, df_AF0438_all,
+                    df_AF0465_all, df_AF0467_all, df_AF0468_all, df_AF0469_all, df_AF0490_all, df_AF0496_all)
+
+tst <- rest_of_df$tst
+df <- add_column(df, tst, .after = 4) 
+
+df <- df %>%  
+mutate(order = ifelse(participant=="AFOSR_AF0182"|participant=="AFOSR_AF0233"|participant=="AFOSR_AF0205"|participant=="AFOSR_AF0256"|participant=="AFOSR_AF0280"|participant=="AFOSR_AF0286"|participant=="AFOSR_AF0314"|participant=="AFOSR_AF0320"|participant=="AFOSR_AF0355"|participant=="AFOSR_AF0361"|participant=="AFOSR_AF0378"|participant=="AFOSR_AF0386"|participant=="AFOSR_AF0388"|participant=="AFOSR_AF0399"|participant=="AFOSR_AF0465"|participant=="AFOSR_AF0467"|participant=="AFOSR_AF0468"|participant=="AFOSR_AF0469"|participant=="AFOSR_AF0490"|participant=="AFOSR_AF0496",1,2)) %>% 
+mutate_all(~ifelse(is.na(.), NaN, .))
+
+rm(list = setdiff(ls(), "df"))  # Remove all but df
+```
+# Average channels
+```{r}
+# average channels
+frontal <- rep("frontal", each=648) %>%  as.data.frame()
+central <- rep("central", each=648) %>%  as.data.frame()
+occipital <- rep("occipital", each=648) %>%  as.data.frame()
+parietal <- rep("parietal", each=648) %>%  as.data.frame()
+
+df_frontal <- df %>% 
+  filter(channel=="F3" | channel =="F4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_frontal <- add_column(df_frontal, frontal, .after = 3)
+colnames(df_frontal)[4] <- 'channel'
+  
+df_central <- df %>% 
+  filter(channel=="C3" | channel =="C4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_central <- add_column(df_central, central, .after = 3)
+colnames(df_central)[4] <- 'channel'
+
+df_parietal <- df %>% 
+  filter(channel=="P3" | channel =="P4") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_parietal <- add_column(df_parietal, parietal, .after = 3)
+colnames(df_parietal)[4] <- 'channel'
+
+df_occipital <- df %>% 
+  filter(channel=="O1" | channel =="O2") %>% 
+  group_by(participant, night,condition) %>% 
+  nest() %>% 
+  nest_select(data, where(is.numeric)) %>% 
+  nest_summarise(data, across(everything(),mean,na.rm=TRUE)) %>% 
+  unnest()
+df_occipital <- add_column(df_occipital, occipital, .after = 3)
+colnames(df_occipital)[4] <- 'channel'
+
+df_all <- rbind(df_frontal, df_central, df_parietal, df_occipital)
+
+cols_to_change <- (names(df_all)[6:29])
+df_all[cols_to_change] <- df_all[cols_to_change] * -1
+
+rm(list = setdiff(ls(), "df_all"))  # Remove all but df_all
+
+#saveRDS(df_all, "C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/FINAL/excitability/for #paper/triplet/df_triplet.rds")
+```
