@@ -1,0 +1,363 @@
+---
+title: "statistical analysis - within night dynamics (baseline)"
+output: html_notebook
+---
+
+# 1. Import functions
+```{r}
+library(devtools)
+library(lmerTest)
+library(lme4)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggpubr)
+library(ggprism)
+library(modelbased)
+
+```
+# 2. Load dataset (Fig S8)
+```{r}
+df_dynamics <- readRDS("df_dynamics_21Dec25.rds")
+
+cols <- c("participant", "condition", "night", "order", "cycle","channel")
+df_dynamics <- df_dynamics %>% mutate_at(cols, factor)
+factor(df_dynamics$night, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+factor(df_dynamics$cycle, order=TRUE,
+       levels= c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"))
+
+```
+#3. Choose cycles to include
+```{r}
+df_baseline<- df_dynamics %>%
+  filter(night == "1")
+cols_to_plot <- names(df_baseline)[c(7:8, 10:ncol(df_baseline))]
+
+count_table <- df_baseline %>%
+  dplyr::group_by(condition, cycle) %>%
+  dplyr::summarise(
+    dplyr::across(
+      all_of(cols_to_plot),
+      ~ sum(!is.na(.)),
+      .names = "n_{.col}"
+    ),
+    .groups = "drop"
+  )
+# high drop off from cycle 6 onwards causing model to diverge so choose up to cycle 5 for analysis only 
+
+df_baseline<- df_baseline %>%
+  filter(!cycle=="6"& !cycle=="7"& !cycle=="8" & !cycle=="9" & !cycle=="10")
+```
+# 4. lmes - run for phasic
+```{r}
+# lmes ----
+# exponent
+fit.baseline_exp30to45 <- lmer(exponent_30_45_cyc_phasic_allcycles ~ cycle*channel + condition + tst  + (1|participant), data=df_baseline)
+anova.baseline_exp30to45  <-  anova(fit.baseline_exp30to45)
+
+# alpha
+fit.baseline_IAPF <- lmer(IAPF_allcycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_IAPF  <-  anova(fit.baseline_IAPF)
+
+fit.baseline_densityalpha <- lmer(den_alpha_cycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_densityalpha  <-  anova(fit.baseline_densityalpha)
+
+fit.baseline_snralpha <- lmer(snr_alpha_cycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_snralpha <-  anova(fit.baseline_snralpha)
+
+# theta
+fit.baseline_ITPF <- lmer(ITPF_allcycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_ITPF  <-  anova(fit.baseline_ITPF)
+
+fit.baseline_densitytheta <- lmer(den_theta_cycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_densitytheta  <-  anova(fit.baseline_densitytheta) #%>% select(c(5,6))
+
+fit.baseline_snrtheta <- lmer(snr_theta_cycles_phasic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_snrtheta <-  anova(fit.baseline_snrtheta)
+
+# probability 
+fit.baseline_probability <- lmer(prob_phasic_cycles ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_probability  <-  anova(fit.baseline_probability)
+
+# posthoc ----
+# compare to cycle 1
+contrast((emmeans(fit.baseline_probability, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_densitytheta, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_snralpha, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_IAPF, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_densityalpha, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+
+# estimated means ----
+esmmeans_baseline_exp30to45 <- estimate_means(fit.baseline_exp30to45 , by = c("cycle"))
+
+esmmeans_baseline_IAPF <- estimate_means(fit.baseline_IAPF , by = c("cycle"))
+esmmeans_baseline_densityalpha <- estimate_means(fit.baseline_densityalpha , by = c("cycle"))
+esmmeans_baseline_snralpha <- estimate_means(fit.baseline_snralpha , by = c("cycle"))
+esmmeans_baseline_ITPF <- estimate_means(fit.baseline_ITPF , by = c("cycle"))
+esmmeans_baseline_densitytheta <- estimate_means(fit.baseline_densitytheta , by = c("cycle"))
+esmmeans_baseline_snrtheta <- estimate_means(fit.baseline_snrtheta , by = c("cycle"))
+
+esmmeans_baseline_probability <- estimate_means(fit.baseline_probability, by = c("cycle"))
+
+# put in dataframe
+df_estimated_means_phasic <- mget(ls(pattern = "esmmeans_")) # puts all esmmeans into a single list
+
+# id each 
+add_id_variable <- function(df_estimated_means_phasic) {
+  for (i in seq_along(df_estimated_means_phasic)) {
+    df_estimated_means_phasic[[i]]$id <- i}
+  return(df_estimated_means_phasic)}
+
+#clean up df
+df_estimated_means_phasic <- add_id_variable(df_estimated_means_phasic)
+
+df_estimated_means_phasic <- do.call(rbind, df_estimated_means_phasic) 
+df_estimated_means_phasic <- df_estimated_means_phasic %>% rownames_to_column("row_names") %>% 
+  dplyr::select(c(1:6))
+df_estimated_means_phasic$stage <- rep("phasic", 40)
+
+rm(list = ls(pattern="esmmeans_"))
+```
+#5. lmes - run for tonic
+```{r}
+rm(list = setdiff(ls(), "df_baseline"))
+
+# lme ----
+# exponent
+fit.baseline_exp30to45 <- lmer(exponent_30_45_cyc_tonic_allcycles ~ cycle*channel + condition + tst  + (1|participant), data=df_baseline)
+anova.baseline_exp30to45  <-  anova(fit.baseline_exp30to45)
+
+# alpha
+fit.baseline_IAPF <- lmer(IAPF_allcycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_IAPF  <-  anova(fit.baseline_IAPF)
+
+fit.baseline_densityalpha <- lmer(den_alpha_cycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_densityalpha  <-  anova(fit.baseline_densityalpha)
+
+# outlier - remove
+df_baseline[238, "snr_alpha_cycles_tonic"] <- NA
+
+fit.baseline_snralpha <- lmer(snr_alpha_cycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_snralpha <-  anova(fit.baseline_snralpha)
+
+# theta
+fit.baseline_ITPF <- lmer(ITPF_allcycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_ITPF  <-  anova(fit.baseline_ITPF)
+
+fit.baseline_densitytheta <- lmer(den_theta_cycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_densitytheta  <-  anova(fit.baseline_densitytheta) #%>% select(c(5,6))
+
+fit.baseline_snrtheta <- lmer(snr_theta_cycles_tonic ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_snrtheta <-  anova(fit.baseline_snrtheta)
+
+# probability 
+fit.baseline_probability <- lmer(prob_tonic_cycles ~ cycle*channel + condition + tst + (1|participant), data=df_baseline)
+anova.baseline_probability  <-  anova(fit.baseline_probability)
+
+# posthoc ----
+# compare to cycle 1
+contrast((emmeans(fit.baseline_probability, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_densitytheta, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_snralpha, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_IAPF, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_densityalpha, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+
+# estimated means ----
+esmmeans_baseline_exp30to45 <- estimate_means(fit.baseline_exp30to45 , by = c("cycle"))
+
+esmmeans_baseline_IAPF <- estimate_means(fit.baseline_IAPF , by = c("cycle"))
+esmmeans_baseline_densityalpha <- estimate_means(fit.baseline_densityalpha , by = c("cycle"))
+esmmeans_baseline_snralpha <- estimate_means(fit.baseline_snralpha , by = c("cycle"))
+esmmeans_baseline_ITPF <- estimate_means(fit.baseline_ITPF , by = c("cycle"))
+esmmeans_baseline_densitytheta <- estimate_means(fit.baseline_densitytheta , by = c("cycle"))
+esmmeans_baseline_snrtheta <- estimate_means(fit.baseline_snrtheta , by = c("cycle"))
+
+esmmeans_baseline_probability <- estimate_means(fit.baseline_probability, by = c("cycle"))
+
+# put in df
+df_estimated_means_tonic <- mget(ls(pattern = "esmmeans_")) # puts all esmmeans into a single list
+
+# id each 
+add_id_variable <- function(df_estimated_means_tonic) {
+  for (i in seq_along(df_estimated_means_tonic)) {
+    df_estimated_means_tonic[[i]]$id <- i}
+  return(df_estimated_means_tonic)}
+
+#clean up df
+df_estimated_means_tonic <- add_id_variable(df_estimated_means_tonic)
+
+df_estimated_means_tonic <- do.call(rbind, df_estimated_means_tonic)  
+df_estimated_means_tonic <- df_estimated_means_tonic %>% rownames_to_column("row_names") %>% 
+  dplyr::select(c(1:6))
+df_estimated_means_tonic$stage <- rep("tonic", 40)
+
+rm(list = ls(pattern="esmmeans_"))
+```
+#6 Combine dataframe from phasic and tonic
+```{r}
+### remove unwanted suffix and prefix in variables ----
+df_estimated_means_all <- rbind(df_estimated_means_phasic, df_estimated_means_tonic) %>%
+mutate(row_names = str_remove(row_names, "^esmmeans_baseline_"))# Remove "esmmeans_"
+
+df_estimated_means_all<-df_estimated_means_all %>% 
+  mutate(row_names = str_remove(row_names, "\\.\\d+$"))  # Remove ".1", ".2", etc.
+```
+#7 Plot
+```{r}
+cols <- c("row_names", "cycle", "stage")
+df_estimated_means_all <- df_estimated_means_all %>% mutate_at(cols, factor)
+
+my_order <- c("densitytheta", "snrtheta","ITPF", "densityalpha", "snralpha", "IAPF", "exp1to30", "exp30to45", "probability")
+
+rename_mapping <- c(
+  "densitytheta" = "theta\ndensity",
+  "snrtheta" = "theta\namplitude",
+  "ITPF" = "ITPF",
+  "densityalpha" = "alpha density",
+  "snralpha" = "alpha amplitude",
+  "IAPF" = "IAPF",
+  "exp1to30" = "exponent 1-30Hz",
+  "exp30to45" = "exponent 30-45Hz",   
+  "probability" = "probability phasic/tonic")
+
+#df_estimated_means_rename <- df_estimated_means_all %>%
+#  mutate(row_names = factor(row_names, levels = my_order),  # Set order
+#         row_names = recode(row_names, rename_mapping))  # Rename levels
+
+
+# plot each individually 
+#install.packages("gg.gap")
+library(gg.gap)
+ 
+#probability
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "probability")
+
+probabilityplot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3) +
+ geom_point(aes(fill = stage), shape = 21, size = 2) +
+  labs(
+    x = "cycle",
+    y = "percentage (%)",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0,1,0.05), expand = c(0, NA)) 
+
+probabilityplot <- gg.gap(plot=probabilityplot,
+       segments=c(0.2,0.8),
+       tick_width = c(0.04, 0.04), # (0.2-0)/5 because i want 5 values 
+       ylim=c(0,1))
+#ggsave("figure/figS8/probabilityplot.svg", plot=probabilityplot, width=3, height=3)
+
+# slope
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "exp30to45")
+
+exp30to45plot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3) +
+ geom_point(aes(fill = stage), shape = 21, size = 2) +
+  labs(
+    x = "cycle",
+    y = "spectral slope",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(-4, -3.2), breaks = seq(-4, -3.2,0.2), expand = c(0, NA)) 
+
+# theta density
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "densitytheta")
+
+densitythetaplot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3) +
+ geom_point(aes(fill = stage), shape = 21, size = 2) +
+  labs(
+    x = "cycle",
+    y = "density (oscillations/min)",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(5,10), breaks = seq(5,10,1), expand = c(0, NA)) 
+
+# alpha amplitude
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "snralpha")
+
+snralphaplot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3, position = position_dodge(0.3)) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+ geom_point(aes(fill = stage), shape = 21, size = 2, position = position_dodge(0.3)) +
+  labs(
+    x = "cycle",
+    y = "alpha amplitude",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(1.8,2.7), breaks = seq(1.8,2.7,0.3), expand = c(0, NA)) 
+
+# alpha IAPF
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "IAPF")
+
+IAPFplot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3,position = position_dodge(0.3)) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+ geom_point(aes(fill = stage), shape = 21, size = 2, position = position_dodge(0.3)) +
+  labs(
+    x = "cycle",
+    y = "IAPF",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(7.8,8.4), breaks = seq(7.8,8.4,0.1), expand = c(0, NA))
+
+#density alpha
+plot_dynamics_filter <- df_estimated_means_all %>%  filter (row_names == "densityalpha")
+
+densityalphaplot <- ggplot(plot_dynamics_filter, aes(x = cycle, y = Mean, shape = stage, group=stage, colour=stage)) +
+geom_line(linewidth=0.3,position = position_dodge(0.3)) +
+geom_errorbar(aes(x=cycle, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3, position = position_dodge(0.3)) +
+ geom_point(aes(fill = stage), shape = 21, size = 2, position = position_dodge(0.3)) +
+  labs(
+    x = "cycle",
+    y = "density alpha",
+    shape = "Stage"
+  ) +
+ theme_prism(base_size = 10, base_fontface="plain", base_line_size=0.2) +
+  scale_shape_manual(values = c(16,16)) +
+  scale_colour_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_fill_manual(values = c("phasic" = "#0072B2", "tonic" = "#D55E00")) +
+  scale_y_continuous(limits = c(18,24), breaks = seq(18,24,1), expand = c(0, NA))
+
+within_dynamics <- ggarrange(probabilityplot, exp30to45plot, densitythetaplot, snralphaplot, IAPFplot, densityalphaplot, ncol = 3, nrow = 3, common.legend = TRUE, legend="bottom")
+#ggsave("figure/figS8/within_dynamics.svg", plot=within_dynamics, width=9, height=9)
+```
+#8 Posthoc
+```{r}
+# phasic
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+contrast((emmeans(fit.baseline_exp30to45, ~ cycle)), method = "trt.vs.ctrl", ref = 1, adjust = "sidak")
+```
+
