@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --partition=high_mem
+#SBATCH --job-name="MATLAB"
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=5G
+#SBATCH --time=00-12:00:00
+#SBATCH --output=matlab.out
+
+cd $SLURM_SUBMIT_DIR
+module use /opt/software/user-pkgs/modulefiles/all
+module use /opt/software/user-pkgs/modulefiles/psychology
+module load setcondaenv
+
+conda info -e
+module load amica
+module load matlab/2021a
+matlab -nosplash -nodesktop -nodisplay -r "run('/users/nemo/projects/Airforce/paper/sprint/A_sprint.m');exit"
+
+
