@@ -29,8 +29,11 @@ Processed data to run the scripts and to create the figures are deposited at Zen
 ### 2.1 preprocessing
 
 *A_align_data*: calculate how to align sleep scoring with data
+
 *B_extract_REM*: align data and sleep scoring, read in phasic vs tonic scoring, find good REM samples 
+
 *C_ICA_af_array*: script to run ICA using clean REM data and to remove independent components automatically
+
 *D_insert_REM_after_ICA*: put REM data after independent component removal back into whole night data
 
 
@@ -47,14 +50,18 @@ Processed data to run the scripts and to create the figures are deposited at Zen
 **allnight**
 
 *B_eBOSC_allsub*: calculate density, abundance, amplitude, peak frequency of oscillations in rem, phasic, tonic, nrem, and wake across whole night per participant
+
 *C_eBOSC_allsub*: combine all characteristics from all night and all participants into one file
+
 *D_eBOSC_make_tables*: make table of allnight wave characteristics
 Figure_eBOSC_histograms: make histogram plots showing oscillation frequency distribution for individual participants
 
 **dynamics**
 
 *B_eBOSC_dynamics*: calculate density, abundance, amplitude, peak frequency of oscillations for rem, phasic, tonic, nrem, and wake for each sleep cycle and each quintile within sleep cycle
+
 *C_eBOSC_dynamics_allsub*: combine all characteristics from all cycles and quintiles from all participants into one file
+
 *D_eBOSC_dynamics_make_tables*: make table of characteristics for each sleep cycle and quintiles
 
 
@@ -65,15 +72,21 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 **allnight**
 
 *B_sprint_allnights*: calculate exponent and offset for rem, phasic, tonic, nrem, and wake across whole night per participant 
+
 *C_sprint_allsub*: combine exponent and offset for rem, phasic, tonic, nrem, and wake from all night and all participants into one file
+
 *D_sprint_make_tables*: make table of allnight exponent and offset
+
 *Figure_plot_spectra_allsub_base*: plot spectra comparing phasic and tonic for baseline nights
 
 **dynamics**
 
 *B_sprint_dynamics*: calculate exponent, offset, and spectra for rem, phasic, tonic, nrem, and wake for each sleep cycle and quintile for all participants and nights
+
 *C_sprint_dynamics_make_tables*: make tables of exponent and offset for first cycle, last cycle, first-last difference, all night, pre-post triplet difference averaged, rem in-between averaged, for each sleep cycle, and for each sleep cycle and quintile
+
 *Figure_plot_spectra_allsub_base_cycles*: plot spectra for nrem, phasic and tonic for first and last cycle for baseline nights
+
 *Figure_plot_spectra_allsub_SESR_cycles*: plot spectra for nrem, phasic and tonic for first and last cycle for SS/IS nights
 
 —
@@ -83,19 +96,30 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 ### 3.1 Data preparation for statistics
 
 *Aperiodic*: configures processed SPRINT table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels and baseline values  
+
 *Oscillatory*: configures processed eBOSC table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels and baseline values  
+
 *PANAS*: configures PANAS table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_21Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
+
 *PCA (cognition)*: extract principal components from behavioural data (using script PCA_BSESR_protocol), configures PCA table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_21Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
+
 *Slope modulation*: configures processed overnight and NREM-REM-NREM triplets aperiodic component table to produce final dataframe for statistical analyses that includes total sleep time, order, phasic and tonic oscillatory component values (using script arrange_data_for_excitability_29Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
+
 *Within night dynamics*: configures table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels
 
 
 ### 3.2 Statistical analyses and Figures
 
 *Duration*: statistical analyses for duration changes for allnight and common sleep duration; creates Fig1, Suppl Fig S1, Table S1
+
 *Aperiodic*: statistical analyses for aperiodic components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across sufficient sleep (SS) and insufficient sleep (IS) for phasic and tonic; creates Fig2, Fig3. Suppl Fig S3 - S4 
+
 *Oscillatory*: statistical analyses for oscillatory components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across SS and IS for phasic and tonic; creates Fig2, Fig3. Suppl Fig S5 - S7
+
 *PANAS*: statistical analyses for changes in PANAS positive and PANAS negative score for SS and IS, associations of duration, periodic and aperiodic components with PANAS positive and PANAS negative during baseline and during SS and IS nights; creates Fig4 and Table S2
+
 *PCA (cognition)*: statistical analyses for changes in four PCA components for SS and IS, associations of duration, periodic and aperiodic components with each PCA component during baseline and during SS and IS nights; creates Fig5 and Table S3
+
 *Slope modulation*: statistical analyses for NREM, phasic and tonic aperiodic component changes overnight and across NREM-REM-NREM triplets during baseline nights and across SS and IS as well as associations between phasic and tonic oscillatory components with slope changes; creates Fig6, Suppl Fig S9 - S12
+
 *Within night dynamics*:  statistical analyses for phasic and tonic REM aperiodic and oscillatory component changes across REM cycles during baseline night; creates Suppl Fig S8
