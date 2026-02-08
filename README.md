@@ -6,7 +6,7 @@ Preprint can be found here [link available upon publication]
 
 Processed data to run the scripts and to create the figures are deposited at Zenodo [link available upon publication]
 
-—
+
 
 ## 1. Requirements and Installation
 
@@ -22,7 +22,7 @@ Processed data to run the scripts and to create the figures are deposited at Zen
 - R Packages:
   `devtools`, `tidyverse`, `modelbased`, `nplyr`, `dplyr`, `broom`, `kableExtra`, `ggpubr`, `lmerTest`, `lme4`, `MuMIn`, `effects`, `emmeans`, `ggprism`, `gghalves`, `haven`, `ggplot2`, `ggfortify`, `gridExtra`, `carData`, `car`, `factoextra`, `corrplot`, `mice`, `naniar`, `COINr`
 
-—
+
 
 ## 2. Matlab
 
@@ -89,7 +89,7 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 
 *Figure_plot_spectra_allsub_SESR_cycles*: plot spectra for nrem, phasic and tonic for first and last cycle for SS/IS nights
 
-—
+
 
 ## 3. R
 
