@@ -1,0 +1,193 @@
+---
+title: title: "to produce table from raw data for statistical analysis - PCA cognition"
+output: html_notebook
+---
+
+# Import functions 
+```{r}
+library(lmerTest)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(sjPlot)
+library(ggprism)
+library(nplyr)
+
+```
+## --- to produce df_PCA (baseline stats) ---
+# Load raw data 
+```{r}
+df <- read_csv("postsleep_PCAcogn_27July26.csv", 
+               show_col_types = FALSE,
+               col_types = cols(
+                 ISPF_REM_central  = col_double(),   
+                 heightISPF_REM_central = col_double()    
+               )) 
+
+df <- df %>% 
+  pivot_longer(
+    cols =  c(5:8),
+    names_to = "dimension",
+    values_to = "dimvalue"
+  ) %>% 
+  relocate(order,dimension,dimvalue,.after=day)
+
+
+cols <- c("participant", "gender", "condition", "test_no", "day", "night", "order", "dimension")
+df <- df %>% mutate_at(cols, factor) 
+```
+# Append baseline Dim to df
+```{r}
+df_baseline <- df %>% 
+  group_by(day, dimension,condition) %>% 
+  nest() 
+
+# extract baseline values (zscore) and repeat it 8 times (bc 8 days total)
+dim1_SE_base <- pluck(df_baseline$data[[1]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim1_SE_base <- rep(dim1_SE_base$base_dimvalue, 8)
+dim1_SE_base <- data.frame(base_dimvalue = unlist(dim1_SE_base))
+
+dim2_SE_base <- pluck(df_baseline$data[[2]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim2_SE_base <- rep(dim2_SE_base$base_dimvalue, 8)
+dim2_SE_base <- data.frame(base_dimvalue = unlist(dim2_SE_base))
+
+dim3_SE_base <- pluck(df_baseline$data[[3]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)   
+dim3_SE_base <- rep(dim3_SE_base$base_dimvalue, 8)
+dim3_SE_base <- data.frame(base_dimvalue = unlist(dim3_SE_base))
+
+dim4_SE_base <- pluck(df_baseline$data[[4]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim4_SE_base <- rep(dim4_SE_base$base_dimvalue, 8)
+dim4_SE_base <- data.frame(base_dimvalue = unlist(dim4_SE_base))
+
+dim1_SR_base <- pluck(df_baseline$data[[33]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)
+dim1_SR_base <- rep(dim1_SR_base$base_dimvalue, 8)
+dim1_SR_base <- data.frame(base_dimvalue = unlist(dim1_SR_base))
+
+dim2_SR_base <- pluck(df_baseline$data[[34]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim2_SR_base <- rep(dim2_SR_base$base_dimvalue, 8)
+dim2_SR_base <- data.frame(base_dimvalue = unlist(dim2_SR_base))
+
+dim3_SR_base <- pluck(df_baseline$data[[35]]) %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim3_SR_base <- rep(dim3_SR_base$base_dimvalue, 8)
+dim3_SR_base <- data.frame(base_dimvalue = unlist(dim3_SR_base))
+
+dim4_SR_base <- pluck(df_baseline$data[[36]])  %>% dplyr::select(c(6)) %>% dplyr::rename(base_dimvalue = dimvalue)  
+dim4_SR_base <- rep(dim4_SR_base$base_dimvalue, 8)
+dim4_SR_base <- data.frame(base_dimvalue = unlist(dim4_SR_base))
+
+# get each dim&cond dimvalue 
+df_dim1_SE <- df %>% filter(dimension=="Dim1") %>% filter(condition=="SE") %>%  arrange(day)
+df_dim1_SR <- df %>% filter(dimension=="Dim1") %>% filter(condition=="SR") %>%  arrange(day)
+df_dim2_SE <- df %>% filter(dimension=="Dim2") %>% filter(condition=="SE") %>%  arrange(day)
+df_dim2_SR <- df %>% filter(dimension=="Dim2") %>% filter(condition=="SR") %>%  arrange(day)
+df_dim3_SE <- df %>% filter(dimension=="Dim3") %>% filter(condition=="SE") %>%  arrange(day)
+df_dim3_SR <- df %>% filter(dimension=="Dim3") %>% filter(condition=="SR") %>%  arrange(day)
+df_dim4_SE <- df %>% filter(dimension=="Dim4") %>% filter(condition=="SE") %>%  arrange(day)
+df_dim4_SR <- df %>% filter(dimension=="Dim4") %>% filter(condition=="SR") %>%  arrange(day)
+
+# append baseline values to each df_dim_cond
+a <- cbind(df_dim1_SE, dim1_SE_base) 
+b <- cbind(df_dim2_SE, dim2_SE_base) 
+c <- cbind(df_dim3_SE, dim3_SE_base) 
+d <- cbind(df_dim4_SE, dim4_SE_base) 
+e <- cbind(df_dim1_SR, dim1_SR_base)
+f <- cbind(df_dim2_SR, dim2_SR_base)
+g <- cbind(df_dim3_SR, dim3_SR_base) 
+h <- cbind(df_dim4_SR, dim4_SR_base) 
+
+df_extend <- rbind(a,b,c,d,e,f,g,h)
+
+df_extend <- df_extend %>%
+  filter(!day == "9")
+
+df_extend <- df_extend %>%  
+  relocate(base_dimvalue, .after = dimvalue) 
+
+rm(list = ls()[-match(c("df", "df_extend"), ls())])
+```
+# For data that have channels: 
+```{r}
+df_reshape <- df_extend %>% 
+  pivot_longer(
+    cols =  c(29:580),
+    names_to = c("measure", "state", "channel"),
+    names_sep="_"
+  ) %>% 
+  unite("measure_state", measure, state, sep = "_") %>% 
+  pivot_wider(
+    names_from = measure_state,  # Use measure_state values as new column names
+    values_from = value          # Fill these new columns with the values from the 'value' column
+  )
+
+cols <- c("participant", "gender", "condition", "test_no", "day", "night", "dimension", "channel", "order")
+df_extend <- df_reshape %>% mutate_at(cols, factor) 
+
+saveRDS(df_extend, "C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/FOR PAPER/July 2026/PCA cognition/stats/df_dim_28July26.rds")
+```
+## --- to produce df_PCA_week (week stats) ---
+# SE/SR week - append baseline values 
+```{r}
+# extract baseline values for all variables and repeat x7 (7 days now excluding last day)
+baseline_values <-df_reshape %>% 
+  filter(day == "2") %>% #postsleep
+  group_by(day, dimension, condition) %>% 
+  nest() 
+
+dim1_SE_base <- pluck(baseline_values$data[[1]]) %>% dplyr::select(c(8:164))  
+colnames(dim1_SE_base) <- paste(colnames(dim1_SE_base), 'baseline', sep = '_')
+dim1_SE_base <- dim1_SE_base[rep(1:nrow(dim1_SE_base),7),]
+
+dim2_SE_base <- pluck(baseline_values$data[[2]]) %>% dplyr::select(c(8:164))  
+colnames(dim2_SE_base) <- paste(colnames(dim2_SE_base), 'baseline', sep = '_')
+dim2_SE_base <- dim2_SE_base[rep(1:nrow(dim2_SE_base),7),]
+
+dim3_SE_base <- pluck(baseline_values$data[[3]]) %>% dplyr::select(c(8:164))  
+colnames(dim3_SE_base) <- paste(colnames(dim3_SE_base), 'baseline', sep = '_')
+dim3_SE_base <- dim3_SE_base[rep(1:nrow(dim3_SE_base),7),]
+
+dim4_SE_base <- pluck(baseline_values$data[[4]]) %>% dplyr::select(c(8:164))  
+colnames(dim4_SE_base) <- paste(colnames(dim4_SE_base), 'baseline', sep = '_')
+dim4_SE_base <- dim4_SE_base[rep(1:nrow(dim4_SE_base),7),]
+
+dim1_SR_base <- pluck(baseline_values$data[[5]]) %>% dplyr::select(c(8:164))  
+colnames(dim1_SR_base) <- paste(colnames(dim1_SR_base), 'baseline', sep = '_')
+dim1_SR_base <- dim1_SR_base[rep(1:nrow(dim1_SR_base),7),]
+
+dim2_SR_base <- pluck(baseline_values$data[[6]]) %>% dplyr::select(c(8:164))  
+colnames(dim2_SR_base) <- paste(colnames(dim2_SR_base), 'baseline', sep = '_')
+dim2_SR_base <- dim2_SR_base[rep(1:nrow(dim2_SR_base),7),]
+
+dim3_SR_base <- pluck(baseline_values$data[[7]]) %>% dplyr::select(c(8:164))  
+colnames(dim3_SR_base) <- paste(colnames(dim3_SR_base), 'baseline', sep = '_')
+dim3_SR_base <- dim3_SR_base[rep(1:nrow(dim3_SR_base),7),]
+
+dim4_SR_base <- pluck(baseline_values$data[[8]]) %>% dplyr::select(c(8:164))  
+colnames(dim4_SR_base) <- paste(colnames(dim4_SR_base), 'baseline', sep = '_')
+dim4_SR_base <- dim4_SR_base[rep(1:nrow(dim4_SR_base),7),]
+
+# get each dim&cond dimvalue 
+df_dim1_SE <- df_reshape %>% filter(dimension=="Dim1") %>% filter(condition=="SE") 
+df_dim1_SR <- df_reshape %>% filter(dimension=="Dim1") %>% filter(condition=="SR") 
+df_dim2_SE <- df_reshape %>% filter(dimension=="Dim2") %>% filter(condition=="SE") 
+df_dim2_SR <- df_reshape %>% filter(dimension=="Dim2") %>% filter(condition=="SR") 
+df_dim3_SE <- df_reshape %>% filter(dimension=="Dim3") %>% filter(condition=="SE") 
+df_dim3_SR <- df_reshape %>% filter(dimension=="Dim3") %>% filter(condition=="SR") 
+df_dim4_SE <- df_reshape %>% filter(dimension=="Dim4") %>% filter(condition=="SE") 
+df_dim4_SR <- df_reshape %>% filter(dimension=="Dim4") %>% filter(condition=="SR") 
+
+# append baseline values to each df_dim_cond
+a <- cbind(df_dim1_SE, dim1_SE_base)  
+b <- cbind(df_dim2_SE, dim2_SE_base) 
+c <- cbind(df_dim3_SE, dim3_SE_base) 
+d <- cbind(df_dim4_SE, dim4_SE_base)
+e <- cbind(df_dim1_SR, dim1_SR_base) 
+f <- cbind(df_dim2_SR, dim2_SR_base)
+g <- cbind(df_dim3_SR, dim3_SR_base) 
+h <- cbind(df_dim4_SR, dim4_SR_base) 
+
+df_full <- rbind(a,b,c,d,e,f,g,h)
+
+rm(list = ls()[-match(c("df", "df_extend", "df_full"), ls())])
+
+saveRDS(df_full, "C:/Users/swong3/OneDrive - Imperial College London/Documents/R/airforce_data/data/FOR PAPER/July 2026/PCA cognition/stats/df_dim_week_28July26.rds")
+```
