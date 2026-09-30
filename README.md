@@ -2,11 +2,7 @@
 
 This is the repository for the paper **“Tonic REM sleep EEG components predict better mood, cognition and reduce cortical excitability overnight”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
 
-Preprint can be found here [link available upon publication]
-
-Processed data to run the scripts and to create the figures are deposited at Zenodo [link available upon publication]
-
-
+Preprint can be found here https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1
 
 ## 1. Requirements and Installation
 
@@ -20,7 +16,7 @@ Processed data to run the scripts and to create the figures are deposited at Zen
   - [shadedErrorBar](https://uk.mathworks.com/matlabcentral/fileexchange/26311-raacampbell-shadederrorbar)
 - R v4.4.1 for statistical analyses and figures
 - R Packages:
-  `devtools`, `tidyverse`, `modelbased`, `nplyr`, `dplyr`, `broom`, `kableExtra`, `ggpubr`, `lmerTest`, `lme4`, `MuMIn`, `effects`, `emmeans`, `ggprism`, `gghalves`, `haven`, `ggplot2`, `ggfortify`, `gridExtra`, `carData`, `car`, `factoextra`, `corrplot`, `mice`, `naniar`, `COINr`
+  `devtools`, `tidyverse`, `modelbased`, `nplyr`, `dplyr`, `broom`, `kableExtra`, `ggpubr`, `lmerTest`, `lme4`, `MuMIn`, `effects`, `emmeans`, `ggprism`, `gghalves`, `haven`, `ggplot2`, `ggfortify`, `gridExtra`, `carData`, `car`, `factoextra`, `corrplot`, `mice`, `naniar`, `COINr`, 'modelbased'
 
 
 
@@ -99,27 +95,25 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 
 *Oscillatory*: configures processed eBOSC table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels and baseline values  
 
-*PANAS*: configures PANAS table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_21Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
+*PANAS*: configures PANAS table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_27July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
 
-*PCA (cognition)*: extract principal components from behavioural data (using script PCA_BSESR_protocol), configures PCA table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_21Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
+*PCA (cognition)*: extract principal components from behavioural data (using script PCA_BSESR_protocol), configures PCA table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_27July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
 
-*Slope modulation*: configures processed overnight and NREM-REM-NREM triplets aperiodic component table to produce final dataframe for statistical analyses that includes total sleep time, order, phasic and tonic oscillatory component values (using script arrange_data_for_excitability_29Dec25), averaged values for frontal, central, posterior & occipital channels and baseline values  
-
-*Within night dynamics*: configures table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels
+*Slope modulation*: configures processed overnight and NREM-REM-NREM triplets aperiodic component table to produce final dataframe for statistical analyses that includes total sleep time, order, phasic and tonic oscillatory component values (using script arrange_data_for_excitability_30July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
 
 
 ### 3.2 Statistical analyses and Figures
 
-*Duration*: statistical analyses for duration changes for allnight and common sleep duration; creates Fig1, Suppl Fig S1, Table S1
+*Duration*: statistical analyses for duration changes for allnight and common sleep duration; creates Fig1, Suppl Fig S2, Table S1 and S3
 
-*Aperiodic*: statistical analyses for aperiodic components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across sufficient sleep (SS) and insufficient sleep (IS) for phasic and tonic; creates Fig2, Fig3. Suppl Fig S3 - S4 
+*Aperiodic*: statistical analyses for aperiodic components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across sufficient sleep (SS) and insufficient sleep (IS) for phasic and tonic; creates Fig2, Fig3. Suppl Fig S4, 5 and 8. 
 
-*Oscillatory*: statistical analyses for oscillatory components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across SS and IS for phasic and tonic; creates Fig2, Fig3. Suppl Fig S5 - S7
+*Oscillatory*: statistical analyses for oscillatory components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across SS and IS for phasic and tonic; creates Fig2, Fig3 and Suppl Fig S6 and 9. 
 
-*PANAS*: statistical analyses for changes in PANAS positive and PANAS negative score for SS and IS, associations of duration, periodic and aperiodic components with PANAS positive and PANAS negative during baseline and during SS and IS nights; creates Fig4 and Table S2
+*PANAS*: statistical analyses for changes in PANAS positive and PANAS negative score for SS and IS, associations of duration, periodic and aperiodic components with PANAS positive and PANAS negative during baseline and during SS and IS nights; creates Fig4 and Suppl Table 4-5.   
 
-*PCA (cognition)*: statistical analyses for changes in four PCA components for SS and IS, associations of duration, periodic and aperiodic components with each PCA component during baseline and during SS and IS nights; creates Fig5 and Table S3
+*PCA (cognition)*: statistical analyses for changes in four PCA components for SS and IS, associations of duration, periodic and aperiodic components with each PCA component during baseline and during SS and IS nights; creates Fig5 and  Suppl Table 6-7.   
 
-*Slope modulation*: statistical analyses for NREM, phasic and tonic aperiodic component changes overnight and across NREM-REM-NREM triplets during baseline nights and across SS and IS as well as associations between phasic and tonic oscillatory components with slope changes; creates Fig6, Suppl Fig S9 - S12
+*Slope modulation*: statistical analyses for NREM, phasic and tonic aperiodic component changes overnight and across NREM-REM-NREM triplets during baseline nights and across SS and IS as well as associations between phasic and tonic oscillatory components with slope changes; creates Fig6, Suppl Fig S10 - S12 and Suppl Table 8-9.   
 
-*Within night dynamics*:  statistical analyses for phasic and tonic REM aperiodic and oscillatory component changes across REM cycles during baseline night; creates Suppl Fig S8
+*Within night dynamics*:  statistical analyses for REM duration (% TST) every two hour periods (h) across baseline night and SS/IS week; creates Suppl Fig S3
