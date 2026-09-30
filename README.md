@@ -2,7 +2,8 @@
 
 This is the repository for the paper **“Tonic REM sleep EEG components predict better mood, cognition and reduce cortical excitability overnight”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
 
-Preprint can be found here https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1
+Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1).
+
 
 ## 1. Requirements and Installation
 
