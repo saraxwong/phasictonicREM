@@ -16,7 +16,7 @@ Preprint can be found here https://www.biorxiv.org/content/10.64898/2026.02.09.7
   - [shadedErrorBar](https://uk.mathworks.com/matlabcentral/fileexchange/26311-raacampbell-shadederrorbar)
 - R v4.4.1 for statistical analyses and figures
 - R Packages:
-  `devtools`, `tidyverse`, `modelbased`, `nplyr`, `dplyr`, `broom`, `kableExtra`, `ggpubr`, `lmerTest`, `lme4`, `MuMIn`, `effects`, `emmeans`, `ggprism`, `gghalves`, `haven`, `ggplot2`, `ggfortify`, `gridExtra`, `carData`, `car`, `factoextra`, `corrplot`, `mice`, `naniar`, `COINr`, 'modelbased'
+  `devtools`, `tidyverse`, `modelbased`, `nplyr`, `dplyr`, `broom`, `kableExtra`, `ggpubr`, `lmerTest`, `lme4`, `MuMIn`, `effects`, `emmeans`, `ggprism`, `gghalves`, `haven`, `ggplot2`, `ggfortify`, `gridExtra`, `carData`, `car`, `factoextra`, `corrplot`, `mice`, `naniar`, `COINr`, `modelbased`
 
 
 
