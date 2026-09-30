@@ -1,0 +1,612 @@
+---
+title: "duration stats"
+output: html_notebook
+---
+
+# 1. Import functions
+```{r}
+library(devtools)
+library(lmerTest)
+library(lme4)
+library(emmeans)
+library(tidyverse)
+library(broom)
+library(kableExtra)
+library(ggpubr)
+library(ggprism)
+library(modelbased)
+```
+# 2. Load dataset for absolute duration/common sleep duration (Fig 1, S1)
+```{r}
+df_week <- read_csv("duration_allnight_07-Dec-2025.csv", show_col_types = FALSE)
+df_commonweek <- read_csv("duration_common_07-Dec-2025.csv", show_col_types = FALSE)
+
+# Factorise
+cols <- c("participant", "condition", "night", "order")
+df_week <- df_week %>% mutate_at(cols, factor)
+df_commonweek <- df_commonweek %>% mutate_at(cols, factor)
+
+# Remove Night 9 (recov)
+df_week <- df_week %>% 
+  filter(!night == "9")
+df_commonweek <- df_commonweek %>% 
+  filter(!night == "9")
+
+```
+# 3. Run lmes
+```{r}
+## absolute duration ----
+# tst
+fit.allnight_tst <- lmer(tst_min ~ night + night:condition + baseline_tstmin + order + (1|participant), data=df_week)
+anova.tst <- anova(fit.allnight_tst)
+tst.esmmeans <- estimate_means(fit.allnight_tst,  by = c("night", "condition"))
+
+#res <- residuals(fit.allnight_tst)
+#qqnorm(res); qqline(res, col="red")
+
+# REM 
+fit.allnight_REM <- lmer(REM_min ~ night + night:condition + baseline_REMmin + order + (1|participant), data=df_week)
+anova.REM <- anova(fit.allnight_REM)
+REM.esmmeans <- estimate_means(fit.allnight_REM,  by = c("night", "condition"))
+
+#res <- residuals(fit.allnight_REM)
+#qqnorm(res); qqline(res, col="red")
+
+# phasic 
+fit.allnight_phasic <- lmer(phasic_min ~ night + night:condition + baseline_phasicmin + order +(1|participant), data=df_week)
+anova.phasic <- anova(fit.allnight_phasic)
+phasic.esmmeans <- estimate_means(fit.allnight_phasic, by = c("night", "condition"))
+
+# tonic 
+fit.allnight_tonic <- lmer(tonic_min ~ night + night:condition + baseline_tonicmin + order +(1|participant), data=df_week)
+anova.tonic <- anova(fit.allnight_tonic)
+tonic.esmmeans <- estimate_means(fit.allnight_tonic, by = c("night", "condition"))
+
+# NREM
+fit.allnight_NREM <- lmer(NREM_min ~ night + night:condition + baseline_NREMmin + order +(1|participant), data=df_week)
+anova.NREM <- anova(fit.allnight_NREM)
+NREM.esmmeans <- estimate_means(fit.allnight_NREM, by = c("night", "condition"))
+
+fit.allnight_N1 <- lmer(N1_min ~ night + night:condition + baseline_N1min + order +(1|participant), data=df_week)
+anova.N1 <- anova(fit.allnight_N1)
+N1.esmmeans <- estimate_means(fit.allnight_N1, by = c("night", "condition"))
+
+fit.allnight_N2 <- lmer(N2_min ~ night + night:condition + baseline_N2min + order +(1|participant), data=df_week)
+anova.N2 <- anova(fit.allnight_N2)
+N2.esmmeans <- estimate_means(fit.allnight_N2, by = c("night", "condition"))
+
+fit.allnight_N3 <- lmer(N3_min ~ night + night:condition + baseline_N3min + order +(1|participant), data=df_week)
+anova.N3 <- anova(fit.allnight_N3)
+N3.esmmeans <- estimate_means(fit.allnight_N3, by = c("night", "condition"))
+
+# wake
+fit.allnight_wake <- lmer(WASO_min ~ night + night:condition + baseline_wakemin + order +(1|participant), data=df_week)
+anova.wake<- anova(fit.allnight_wake)
+wake.esmmeans <- estimate_means(fit.allnight_wake, by = c("night", "condition"))
+
+## percentage per tst ----
+# REM 
+fit.allnight_REMperc <- lmer(REM_perc ~ night + night:condition + baseline_REMperc + order + (1|participant), data=df_week)
+anova.REMperc <- anova(fit.allnight_REMperc)
+REMperc.esmmeans <- estimate_means(fit.allnight_REMperc,  by = c("night", "condition"))
+
+# phasic (per tst or per REM)
+fit.allnight_phasicperc <- lmer(phasic_perc ~ night + night:condition + baseline_phasicperc + order +(1|participant), data=df_week)
+anova.phasicperc <- anova(fit.allnight_phasicperc)
+phasicperc.esmmeans <- estimate_means(fit.allnight_phasicperc, by = c("night", "condition"))
+
+fit.allnight_phasicpercREM <- lmer(phasicperREM_perc ~ night + night:condition + baseline_phasicperREMperc + order +(1|participant), data=df_week)
+anova.phasicperREMperc <- anova(fit.allnight_phasicpercREM)
+phasicperREMperc.esmmeans <- estimate_means(fit.allnight_phasicpercREM, by = c("night", "condition"))
+
+# tonic (per tst or per REM)
+fit.allnight_tonicperc <- lmer(tonic_perc ~ night + night:condition + baseline_tonicperc + order +(1|participant), data=df_week)
+anova.tonicperc <- anova(fit.allnight_tonicperc)
+tonicperc.esmmeans <- estimate_means(fit.allnight_tonicperc, by = c("night", "condition"))
+
+fit.allnight_tonicpercREM <- lmer(tonicperREM_perc ~ night + night:condition + baseline_tonicperREMperc + order +(1|participant), data=df_week)
+anova.tonicperREMperc <- anova(fit.allnight_tonicpercREM)
+tonicperREMperc.esmmeans <- estimate_means(fit.allnight_tonicpercREM, by = c("night", "condition"))
+
+# N1
+fit.allnight_N1perc <- lmer(N1_perc ~ night + night:condition + baseline_N1perc + order +(1|participant), data=df_week)
+anova.N1perc <- anova(fit.allnight_N1perc)
+N1perc.esmmeans <- estimate_means(fit.allnight_N1perc, by = c("night", "condition"))
+
+# N2
+fit.allnight_N2perc <- lmer(N2_perc ~ night + night:condition + baseline_N2perc + order +(1|participant), data=df_week)
+anova.N2perc <- anova(fit.allnight_N2perc)
+N2perc.esmmeans <- estimate_means(fit.allnight_N2perc, by = c("night", "condition"))
+
+# N3
+fit.allnight_N3perc <- lmer(N3_perc ~ night + night:condition + baseline_N3perc + order +(1|participant), data=df_week)
+anova.N3perc <- anova(fit.allnight_N3perc)
+N3perc.esmmeans <- estimate_means(fit.allnight_N3perc, by = c("night", "condition"))
+
+# NREM
+fit.allnight_NREMperc <- lmer(NREM_perc ~ night + night:condition + baseline_NREMperc + order +(1|participant), data=df_week)
+anova.NREMperc <- anova(fit.allnight_NREMperc)
+NREMperc.esmmeans <- estimate_means(fit.allnight_NREMperc, by = c("night", "condition"))
+
+# wake
+fit.allnight_wakeperc <- lmer(wake_perc ~ night + night:condition  + baseline_wakeperc + order +(1|participant), data=df_week)
+anova.wakeperc <- anova(fit.allnight_wakeperc)
+wakeperc.esmmeans <- estimate_means(fit.allnight_wakeperc, by = c("night", "condition"))
+
+## percentage per common sleep duration ----
+# REM 
+fit.common_REMperc <- lmer(common_REM_perc ~ night + night:condition + baseline_common_REMperc + order + (1|participant), data=df_commonweek)
+anova.commonREMperc <- anova(fit.common_REMperc)
+common_REMperc.esmmeans <- estimate_means(fit.common_REMperc,  by = c("night", "condition"))
+
+# phasic 
+fit.common_phasicperc <- lmer(common_phasic_perc ~ night + night:condition + baseline_common_phasicperc + order +(1|participant), data=df_commonweek)
+anova.commonphasicperc <- anova(fit.common_phasicperc)
+common_phasicperc.esmmeans <- estimate_means(fit.common_phasicperc, by = c("night", "condition"))
+
+# tonic 
+fit.common_tonicperc <- lmer(common_tonic_perc ~ night + night:condition + baseline_common_tonicperc + order +(1|participant), data=df_commonweek)
+anova.commontonicperc <- anova(fit.common_tonicperc)
+common_tonicperc.esmmeans <- estimate_means(fit.common_tonicperc, by = c("night", "condition"))
+
+# N1
+fit.common_N1perc <- lmer(common_N1_perc ~ night + night:condition + baseline_common_N1perc + order + (1|participant), data=df_commonweek)
+anova.N1perc <- anova(fit.common_N1perc)
+common_N1perc.esmmeans <- estimate_means(fit.common_N1perc, by = c("night", "condition"))
+
+# N2
+fit.common_N2perc <- lmer(common_N2_perc ~ night + night:condition + baseline_common_N2perc + order +(1|participant), data=df_commonweek)
+anova.commonN2perc <- anova(fit.common_N2perc)
+common_N2perc.esmmeans <- estimate_means(fit.common_N2perc, by = c("night", "condition"))
+
+# N3
+fit.common_N3perc <- lmer(common_N3_perc ~ night + night:condition + baseline_common_N3perc + order +(1|participant), data=df_commonweek)
+anova.commonN3perc <- anova(fit.common_N3perc)
+common_N3perc.esmmeans <- estimate_means(fit.common_N3perc, by = c("night", "condition"))
+
+# NREM
+fit.common_NREMperc <- lmer(common_NREM_perc ~ night + night:condition + baseline_common_NREMperc + order +(1|participant), data=df_commonweek)
+anova.commonNREMperc <- anova(fit.common_NREMperc)
+common_NREMperc.esmmeans <- estimate_means(fit.common_NREMperc, by = c("night", "condition"))
+
+# wake
+fit.common_wakeperc <- lmer(common_wake_perc ~ night + night:condition  + baseline_common_wakeperc + order +(1|participant), data=df_commonweek)
+anova.commonwakeperc <- anova(fit.common_wakeperc)
+common_wakeperc.esmmeans <- estimate_means(fit.common_wakeperc, by = c("night", "condition"))
+
+## phasic/tonic per REM ----
+fit.allnight_phasicpercREM <- lmer(phasicperREM_perc ~ night + night:condition + baseline_phasicperREMperc + order +(1|participant), data=df_week)
+anova.phasicperREMperc <- anova(fit.allnight_phasicpercREM)
+phasicperREMperc.esmmeans <- estimate_means(fit.allnight_phasicpercREM, by = c("night", "condition"))
+
+fit.allnight_tonicperc <- lmer(tonic_perc ~ night + night:condition + baseline_tonicperc + order +(1|participant), data=df_week)
+anova.tonicperc <- anova(fit.allnight_tonicperc)
+tonicperc.esmmeans <- estimate_means(fit.allnight_tonicperc, by = c("night", "condition"))
+```
+# 4. Posthoc 
+```{r}
+# duration ----
+#Perform contrasts comparing condition for each night
+get_emm_option("lmer.df")
+
+#REM
+pairs(emmeans(fit.allnight_REM, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#phasic
+pairs(emmeans(fit.allnight_phasic, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#tonic
+pairs(emmeans(fit.allnight_tonic, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#TST
+pairs(emmeans(fit.allnight_tst, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#WASO
+pairs(emmeans(fit.allnight_wake, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#NREM
+pairs(emmeans(fit.allnight_NREM, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N1
+pairs(emmeans(fit.allnight_N1, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N2
+pairs(emmeans(fit.allnight_N2, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N3
+pairs(emmeans(fit.allnight_N3, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+# percentage per tst ----
+#Perform contrasts comparing condition for each night
+
+#REM
+pairs(emmeans(fit.allnight_REMperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#phasic
+pairs(emmeans(fit.allnight_phasicperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#tonic
+pairs(emmeans(fit.allnight_tonicperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#WASO
+pairs(emmeans(fit.allnight_wakeperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#NREM
+pairs(emmeans(fit.allnight_NREMperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N1
+pairs(emmeans(fit.allnight_N1perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N2
+pairs(emmeans(fit.allnight_N2perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N3
+pairs(emmeans(fit.allnight_N3perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+
+# percentage per common sleep duration ----
+#Perform contrasts comparing condition for each night
+
+#REM
+pairs(emmeans(fit.common_REMperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#phasic
+pairs(emmeans(fit.common_phasicperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#tonic
+pairs(emmeans(fit.common_tonicperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#WASO
+pairs(emmeans(fit.common_wakeperc, ~night:condition, by="night", p.adjust = "tukey", lmer.df = "kenward-roger"))
+
+#NREM
+pairs(emmeans(fit.common_NREMperc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N1
+pairs(emmeans(fit.common_N1perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N2
+pairs(emmeans(fit.common_N2perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#N3
+pairs(emmeans(fit.common_N3perc, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+
+# percentage per REM ----
+#Perform contrasts comparing condition for each night
+
+#phasic
+pairs(emmeans(fit.allnight_phasicpercREM, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+#tonic
+pairs(emmeans(fit.allnight_tonicpercREM, ~night:condition, by="night", p.adjust = "tukey",  lmer.df = "kenward-roger"))
+
+```
+#5 Table for absolute values (Table S1)
+```{r}
+df_average <- df_week %>% 
+  dplyr::select(c(1:12)) %>% 
+  group_by(night, condition) %>% 
+  dplyr::summarise(across(where(is.numeric),
+                   list(mean = ~mean(.x, na.rm = TRUE),
+                        sem = ~sd(.x, na.rm = TRUE) / sqrt(sum(!is.na(.x)))),
+                   .names = "{.col}_{.fn}"))
+
+```
+#6 Plot estimated means (Fig 1, S2)
+```{r}
+# duration ----
+plot_outcome <- function(esmmeans_data, y_label, title, y_min, y_max, y_break, line_colour = "black") {
+
+  
+  ggplot(esmmeans_data, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+  geom_line(linewidth=0.3, position =   position_nudge(0.1), colour=line_colour) +
+  geom_errorbar(aes(x=night, y=Mean, ymin=Mean-SE, ymax=Mean+SE,), width=0.4, lwd=0.3, position = position_nudge(0.1), colour=line_colour) +
+  geom_point(data = subset(esmmeans_data, condition == "SE"), aes(shape = condition), position = position_nudge(0.1), size=2, colour= line_colour) +
+  geom_point(data = subset(esmmeans_data, condition == "SR"), aes(shape = condition), fill="white", position = position_nudge(0.1), size=2, colour=line_colour) + 
+  labs(x = "night", y = y_label) + ggtitle(title) +
+  scale_y_continuous(limits = c(y_min, y_max), breaks = seq(y_min, y_max, y_break), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+}
+  
+plot_REM <- plot_outcome(REM.esmmeans, "Minutes", "REM", 60, 160, 20)
+plot_phasic <- plot_outcome(phasic.esmmeans, "Minutes", "Phasic", 0, 20, 5, line_colour = "#0072B2")
+ plot_tonic <- plot_outcome(tonic.esmmeans, "Minutes", "Tonic", 60, 160, 20, line_colour = "#D55E00") 
+ plot_tst <- plot_outcome(tst.esmmeans, "Minutes", "TST", 320, 570, 50)
+ plot_WASO <- plot_outcome(wake.esmmeans, "Minutes", "WASO", -10, 110, 20)
+ plot_N1 <- plot_outcome(N1.esmmeans, "Minutes", "N1", 0, 80, 20)
+ plot_N2 <- plot_outcome(N2.esmmeans, "Minutes", "N2", 60, 240, 30)
+ plot_N3 <- plot_outcome(N3.esmmeans, "Minutes", "N3", 60, 120, 30)
+plot_NREM <- plot_outcome(NREM.esmmeans, "Minutes", "NREM (N2 + N3)", 200, 350, 50)
+
+# % per tst ----
+plot_REMperc <- plot_outcome(REMperc.esmmeans, "% per total sleep time", "REM", 15, 30, 5)
+plot_phasicperc <- plot_outcome(phasicperc.esmmeans, "% per total sleep time", "Phasic", 0, 4, 0.5, line_colour = "#0072B2")
+ plot_tonicperc <- plot_outcome(tonicperc.esmmeans, "% per total sleep time", "Tonic", 12, 28, 2, line_colour = "#D55E00") 
+plot_WASOperc <- plot_outcome(wakeperc.esmmeans, "% per total sleep time", "WASO", -5, 20, 5)
+plot_N1perc <- plot_outcome(N1perc.esmmeans, "% per total sleep time", "N1", 6, 14, 1)
+plot_N2perc <- plot_outcome(N2perc.esmmeans, "% per total sleep time", "N2", 25, 45, 5)
+plot_N3perc <- plot_outcome(N3perc.esmmeans, "% per total sleep time", "N3", 15, 45, 5)
+plot_NREMperc <- plot_outcome(NREMperc.esmmeans, "% per total sleep time", "NREM (N2 + N3)", 58, 74, 2)
+  
+# % per common dur ----
+plot_commonREMperc <- plot_outcome(common_REMperc.esmmeans, "% per common sleep duration", "REM", 15, 30, 5)
+plot_commonphasicperc <- plot_outcome(common_phasicperc.esmmeans, "% per common sleep duration", "Phasic", 0, 4, 0.5, line_colour = "#0072B2")
+ plot_commontonicperc <- plot_outcome(common_tonicperc.esmmeans, "% per common sleep duration", "Tonic", 12, 28, 2, line_colour = "#D55E00") 
+plot_commonWASOperc <- plot_outcome(common_wakeperc.esmmeans, "% per common sleep duration", "WASO", -5, 20, 5)
+plot_commonN1perc <- plot_outcome(common_N1perc.esmmeans, "% per common sleep duration", "N1", 6, 14, 1)
+plot_commonN2perc <- plot_outcome(common_N2perc.esmmeans, "% per common sleep duration", "N2", 25, 45, 5)
+plot_commonN3perc <- plot_outcome(common_N3perc.esmmeans, "% per common sleep duration", "N3", 15, 45, 5)
+plot_commonNREMperc <- plot_outcome(common_NREMperc.esmmeans, "% per common sleep duration", "NREM (N2 + N3)", 58, 74, 2)  
+  
+# percentage per REM ----
+plot_phasicperREMperc <- plot_outcome(phasicperREMperc.esmmeans, "% per total REM", "Phasic", 0, 15, 3,line_colour = "#0072B2")
+plot_tonicperREMperc <- plot_outcome(tonicperREMperc.esmmeans, "% per total REM", "Tonic", 80, 100, 5, line_colour = "#D55E00") 
+
+## ggarrange ----
+
+# fig1
+plot_fig1 <- ggarrange(
+  plot_REM,  plot_phasic,  plot_tonic,
+  plot_REMperc,  plot_phasicperc,  plot_tonicperc,
+  plot_commonREMperc,  plot_commonphasicperc,  plot_commontonicperc,
+  plot_phasicperREMperc, plot_tonicperREMperc, NULL,   # NULL fills the empty space
+  ncol = 3, nrow = 4,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+ggsave("figure/fig1/duration.svg", plot=plot_fig1, width=9, height=12) 
+
+# figs2
+plot_fig2_row1 <- ggarrange(
+  plot_tst,  plot_WASO,  plot_NREM, plot_N1, plot_N2, plot_N3,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+plot_fig2_row2 <- ggarrange(
+  plot_WASOperc,  plot_NREMperc, plot_N1perc, plot_N2perc, plot_N3perc,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+plot_fig2_row3 <- ggarrange(
+  plot_commonWASOperc,  plot_commonNREMperc, plot_commonN1perc, plot_commonN2perc, plot_commonN3perc,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+ggsave("figure/figs2/duration_all.svg", plot=plot_fig2_row1, width=11, height=3) 
+ggsave("figure/figs2/duration_perc.svg", plot=plot_fig2_row2, width=11, height=3) 
+ggsave("figure/figs2/duration_commonperc.svg", plot=plot_fig2_row3, width=11, height=3)   
+```
+#7. Table for common sleep duration (Table S3)
+```{r}
+df_common_week_dur <- df_commonweek %>% 
+  dplyr::select(c(1:3, 12)) %>% 
+  group_by(night, condition) %>% 
+  summarise(common_sleep_duration = first(common_night_tst_min), 
+            .groups = "drop")%>% 
+  filter(condition == "SR")
+  
+```
+
+
+#Extra. Plot estimated means with violins and raw points
+```{r}
+# duration ----
+plot_outcome <- function(esmmeans_data, raw_data, y_raw, title, y_min, y_max, y_break, y_label, line_colour = "black", data_colour="black", violin_colour="grey") {
+  
+  ggplot(esmmeans_data, aes(x = night, y = Mean, group = condition, shape = condition)) +
+    scale_shape_manual(values = c(16, 21)) +
+    geom_violin(data = subset(raw_data, condition == "SE"),
+               aes(x = night, y = .data[[y_raw]], group = interaction(night, condition)),
+               inherit.aes = FALSE, position = position_nudge(-0.15),width = 0.4,
+               alpha = 0.1,linewidth = 0.1, colour=violin_colour) +
+    geom_violin(data = subset(raw_data, condition == "SR"),
+               aes(x = night, y = .data[[y_raw]], group = interaction(night, condition), colour=state),
+              inherit.aes = FALSE, position = position_nudge(0.15),width = 0.4,
+              alpha = 0.1,linewidth = 0.1, colour= violin_colour) +
+    geom_point(data = subset(raw_data, condition == "SE"),
+               aes(x = night, y = .data[[y_raw]], group = interaction(night, condition)),
+               shape = 16, inherit.aes = FALSE,
+               position = position_nudge(x = -0.15),
+               alpha = 0.3, size = 1, colour=data_colour) +
+    geom_point(data = subset(raw_data, condition == "SR"),
+               aes(x = night, y = .data[[y_raw]], group = interaction(night, condition)),
+               shape = 21, fill = "white", inherit.aes = FALSE,
+               position = position_nudge(x = 0.15),
+               alpha = 0.2, size = 1, colour=data_colour) +
+    geom_errorbar(data = subset(esmmeans_data, condition == "SE"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(-0.15),  colour = line_colour) +
+    geom_errorbar(data = subset(esmmeans_data, condition == "SR"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(0.15),  colour = line_colour) +
+    geom_line(data = subset(esmmeans_data, condition == "SE"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(-0.15), colour = line_colour) +
+    geom_line(data = subset(esmmeans_data, condition == "SR"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(0.15), colour = line_colour) +
+    geom_point(data = subset(esmmeans_data, condition == "SE"),
+               aes(shape = condition),
+               position = position_nudge(-0.15), size = 2,  colour = line_colour) +
+    geom_point(data = subset(esmmeans_data, condition == "SR"),
+               aes(shape = condition),
+               fill = "white",
+               position = position_nudge(0.15), size = 2, colour = line_colour ) +
+    scale_fill_manual(values = c("SE" = "black", "SR" = "white")) +
+    labs(x = "Night", y = y_label) +
+    ggtitle(title) +
+    scale_y_continuous(limits = c(y_min, y_max), breaks = seq(y_min, y_max, y_break), expand = c(0, NA)) +
+    scale_x_discrete(labels = c("B", "1", "2", "3", "4", "5", "6", "7")) +
+    theme_prism(base_size = 9, base_fontface = "plain", base_line_size = 0.2)
+}
+
+plot_REM <- plot_outcome(REM.esmmeans, df_week, "REM_min", "REM", 20, 200, 20, "Minutes")
+plot_phasic <- plot_outcome(phasic.esmmeans, df_week, "phasic_min", "Phasic", -10, 50, 10, "Minutes", line_colour = "#0072B2", data_colour = "#0072B2", violin_colour= "#0072B2")
+plot_tonic <- plot_outcome(tonic.esmmeans, df_week, "tonic_min", "Tonic", 20, 200, 20, "Minutes", line_colour = "#D55E00", data_colour ="#D55E00", violin_colour ="#D55E00")
+plot_tst <- plot_outcome(tst.esmmeans, df_week, "tst_min", "WASO", 200, 700, 100, "Minutes")
+plot_WASO <- plot_outcome(wake.esmmeans, df_week, "WASO_min", "WASO", -10, 260, 30, "Minutes")
+plot_NREM <- plot_outcome(NREM.esmmeans, df_week, "NREM_min", "NREM (N2 + N3)", 120, 470, 30, "Minutes")
+plot_N1 <- plot_outcome(N1.esmmeans, df_week, "N1_min", "N1", 0, 150, 30, "Minutes")
+plot_N2 <- plot_outcome(N2.esmmeans, df_week, "N2_min", "N2", 30, 330, 50, "Minutes")
+plot_N3 <- plot_outcome(N3.esmmeans, df_week, "N3_min", "N3", 0, 200, 20, "Minutes")
+
+# percentage per tst ----
+plot_REMperc <- plot_outcome(REMperc.esmmeans, df_week, "REM_perc", "REM", 0, 45, 5, "% per total sleep time")
+plot_phasicperc <- plot_outcome(phasicperc.esmmeans, df_week, "phasic_perc", "phasic", -2, 10, 2, "% per total sleep time", line_colour = "#0072B2", data_colour = "#0072B2", violin_colour= "#0072B2")
+plot_tonicperc <- plot_outcome(tonicperc.esmmeans, df_week, "tonic_perc", "tonic", 0, 45, 5, "% per total sleep time", line_colour = "#D55E00", data_colour ="#D55E00", violin_colour ="#D55E00")
+plot_WASOperc <- plot_outcome(wakeperc.esmmeans, df_week, "wake_perc", "WASO", -5, 35, 5, "% per total sleep time")
+plot_NREMperc <- plot_outcome(NREMperc.esmmeans, df_week, "NREM_perc", "NREM (N2 + N3)", 45, 90, 5, "% per total sleep time")
+plot_N1perc <- plot_outcome(N1perc.esmmeans, df_week, "N1_perc", "N1", 0, 70, 10, "% per total sleep time")
+plot_N2perc <- plot_outcome(N2perc.esmmeans, df_week, "N2_perc", "N2", 0, 70, 10, "% per total sleep time")
+plot_N3perc <- plot_outcome(N3perc.esmmeans, df_week, "N3_perc", "N3", 0, 70, 10, "% per total sleep time")
+
+# % per common sleep duration ----
+plot_commonREMperc <- plot_outcome(common_REMperc.esmmeans, df_commonweek, "common_REM_perc", "REM", 0, 45, 5, "% per common sleep duration")
+plot_commonphasicperc <- plot_outcome(common_phasicperc.esmmeans, df_commonweek, "common_phasic_perc", "phasic", -2, 10, 2, "% per common sleep duration", line_colour = "#0072B2", data_colour = "#0072B2", violin_colour= "#0072B2")
+plot_commontonicperc <- plot_outcome(common_tonicperc.esmmeans, df_commonweek, "common_tonic_perc", "tonic", 0, 45, 5, "% per common sleep duration", line_colour = "#D55E00", data_colour ="#D55E00", violin_colour ="#D55E00")
+plot_commonWASOperc <- plot_outcome(common_wakeperc.esmmeans, df_commonweek, "common_wake_perc", "WASO", -5, 35, 5, "% per common sleep duration")
+plot_commonNREMperc <- plot_outcome(common_NREMperc.esmmeans, df_commonweek, "common_NREM_perc", "NREM (N2 + N3)", 45, 90, 5, "% per common sleep duration")
+plot_commonN1perc <- plot_outcome(common_N1perc.esmmeans, df_commonweek, "common_N1_perc", "N1", 0, 70, 10, "% per common sleep duration")
+plot_commonN2perc <- plot_outcome(common_N2perc.esmmeans, df_commonweek, "common_N2_perc", "N2", 0, 70, 10, "% per common sleep duration")
+plot_commonN3perc <- plot_outcome(common_N3perc.esmmeans, df_commonweek, "common_N3_perc", "N3", 0, 70, 10, "% per common sleep duration")
+
+# percentage per REM ----
+phasicperREMperc <- ggplot(phasicperREMperc.esmmeans, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+ geom_violin(data = subset(df_week, condition == "SE"),
+               aes(x = night, y = phasicperREM_perc, group = interaction(night, condition)),
+               inherit.aes = FALSE, position = position_nudge(-0.15),width = 0.4,
+               alpha = 0.1,linewidth = 0.1, colour="#0072B2") +
+    geom_violin(data = subset(df_week, condition == "SR"),
+               aes(x = night, y = phasicperREM_perc, group = interaction(night, condition), colour=state),
+              inherit.aes = FALSE, position = position_nudge(0.15),width = 0.4,
+              alpha = 0.1,linewidth = 0.1, colour= "#0072B2") +
+    geom_point(data = subset(df_week, condition == "SE"),
+               aes(x = night, y = phasicperREM_perc, group = interaction(night, condition)),
+               shape = 16, inherit.aes = FALSE,
+               position = position_nudge(x = -0.15),
+               alpha = 0.3, size = 1, colour="#0072B2") +
+    geom_point(data = subset(df_week, condition == "SR"),
+               aes(x = night, y = phasicperREM_perc, group = interaction(night, condition)),
+               shape = 21, fill = "white", inherit.aes = FALSE,
+               position = position_nudge(x = 0.15),
+               alpha = 0.2, size = 1, colour="#0072B2") +
+    geom_errorbar(data = subset(phasicperREMperc.esmmeans, condition == "SE"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(-0.15),  colour = "#0072B2") +
+    geom_errorbar(data = subset(phasicperREMperc.esmmeans, condition == "SR"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(0.15),  colour ="#0072B2") +
+    geom_line(data = subset(phasicperREMperc.esmmeans, condition == "SE"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(-0.15), colour = "#0072B2") +
+    geom_line(data = subset(phasicperREMperc.esmmeans, condition == "SR"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(0.15), colour = "#0072B2") +
+    geom_point(data = subset(phasicperREMperc.esmmeans, condition == "SE"),
+               aes(shape = condition),
+               position = position_nudge(-0.15), size = 2,  colour = "#0072B2") +
+    geom_point(data = subset(phasicperREMperc.esmmeans, condition == "SR"),
+               aes(shape = condition),
+               fill = "white",
+               position = position_nudge(0.15), size = 2, colour = "#0072B2") +
+  scale_y_continuous(limits = c(-5, 35), breaks = seq(-5, 35, 5), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  labs(x = "Night", y = "% per total REM") + ggtitle("Phasic") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+
+tonicperREMperc <- ggplot(tonicperREMperc.esmmeans, aes(x = night, y = Mean, group=condition, shape=condition)) +
+  scale_shape_manual(values = c(16,21)) + 
+ geom_violin(data = subset(df_week, condition == "SE"),
+               aes(x = night, y = tonicperREM_perc, group = interaction(night, condition)),
+               inherit.aes = FALSE, position = position_nudge(-0.15),width = 0.4,
+               alpha = 0.1,linewidth = 0.1, colour="#D55E00") +
+    geom_violin(data = subset(df_week, condition == "SR"),
+               aes(x = night, y = tonicperREM_perc, group = interaction(night, condition), colour=state),
+              inherit.aes = FALSE, position = position_nudge(0.15),width = 0.4,
+              alpha = 0.1,linewidth = 0.1, colour= "#D55E00") +
+    geom_point(data = subset(df_week, condition == "SE"),
+               aes(x = night, y = tonicperREM_perc, group = interaction(night, condition)),
+               shape = 16, inherit.aes = FALSE,
+               position = position_nudge(x = -0.15),
+               alpha = 0.3, size = 1, colour="#D55E00") +
+    geom_point(data = subset(df_week, condition == "SR"),
+               aes(x = night, y = tonicperREM_perc, group = interaction(night, condition)),
+               shape = 21, fill = "white", inherit.aes = FALSE,
+               position = position_nudge(x = 0.15),
+               alpha = 0.2, size = 1, colour="#D55E00") +
+    geom_errorbar(data = subset(tonicperREMperc.esmmeans, condition == "SE"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(-0.15),  colour = "#D55E00") +
+    geom_errorbar(data = subset(tonicperREMperc.esmmeans, condition == "SR"),
+                  aes(x = night, y = Mean, ymin = Mean - SE, ymax = Mean + SE),
+                  width = 0.4, lwd = 0.3, position = position_nudge(0.15),  colour = "#D55E00") +
+    geom_line(data = subset(tonicperREMperc.esmmeans, condition == "SE"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(-0.15), colour ="#D55E00") +
+    geom_line(data = subset(tonicperREMperc.esmmeans, condition == "SR"),
+          aes(x = night, y = Mean, group = condition),
+          linewidth = 0.6, position = position_nudge(0.15), colour ="#D55E00") +
+    geom_point(data = subset(tonicperREMperc.esmmeans, condition == "SE"),
+               aes(shape = condition),
+               position = position_nudge(-0.15), size = 2,  colour = "#D55E00") +
+    geom_point(data = subset(tonicperREMperc.esmmeans, condition == "SR"),
+               aes(shape = condition),
+               fill = "white",
+               position = position_nudge(0.15), size = 2, colour = "#D55E00") +
+  scale_y_continuous(limits = c(50, 100), breaks = seq(50, 100, 10), expand = c(0, NA))+
+  scale_x_discrete(labels=c("B", "1", "2", "3", "4", "5", "6", "7")) +
+  labs(x = "Night", y = "% per total REM") + ggtitle("Tonic") +
+  theme_prism(base_size = 9, base_fontface="plain", base_line_size=0.2) 
+
+
+
+# fig1
+plot_fig1 <- ggarrange(
+  plot_REM,  plot_phasic,  plot_tonic,
+  plot_REMperc,  plot_phasicperc,  plot_tonicperc,
+  plot_commonREMperc,  plot_commonphasicperc,  plot_commontonicperc,
+  phasicperREMperc, tonicperREMperc, NULL,   # NULL fills the empty space
+  ncol = 3, nrow = 4,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+ggsave("figure/fig1/duration.svg", plot=plot_fig1, width=9, height=12) 
+
+# figs2
+plot_fig2_row1 <- ggarrange(
+  plot_tst,  plot_WASO,  plot_NREM, plot_N1, plot_N2, plot_N3,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+plot_fig2_row2 <- ggarrange(
+  plot_WASOperc,  plot_NREMperc, plot_N1perc, plot_N2perc, plot_N3perc,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+plot_fig2_row3 <- ggarrange(
+  plot_commonWASOperc,  plot_commonNREMperc, plot_commonN1perc, plot_commonN2perc, plot_commonN3perc,
+  ncol = 6, nrow = 1,
+  common.legend = TRUE,
+  legend = "bottom"
+)
+
+ggsave("figure/figs2/duration_all.svg", plot=plot_fig2_row1, width=11, height=3) 
+ggsave("figure/figs2/duration_perc.svg", plot=plot_fig2_row2, width=11, height=3) 
+ggsave("figure/figs2/duration_commonperc.svg", plot=plot_fig2_row3, width=11, height=3) 
+```
+
+
