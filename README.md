@@ -115,6 +115,6 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 
 *PCA cognition*: statistical analyses for changes in four PCA components for SS and IS, associations of duration, periodic and aperiodic components with each PCA component during baseline and during SS and IS nights; creates Fig5, S6_Table, S7_Table.   
 
-*Slope modulation*: statistical analyses for NREM, phasic and tonic aperiodic component changes overnight and across NREM-REM-NREM triplets during baseline nights and across SS and IS as well as associations between phasic and tonic oscillatory components with slope changes; creates Fig6, S9_Fig, S10_Fig, S11_Fig, S12_Fig, S8_Table.   
+*Slope modulation*: statistical analyses for NREM, phasic and tonic aperiodic component changes overnight and across NREM-REM-NREM triplets during baseline nights and across SS and IS as well as associations between phasic and tonic oscillatory components with slope changes; creates Fig6, S10_Fig, S11_Fig, S12_Fig, S8_Table.   
 
 *Within night dynamics*:  statistical analyses for REM duration (% TST) every two hour periods (h) across baseline night and SS/IS week; creates S3_Fig
