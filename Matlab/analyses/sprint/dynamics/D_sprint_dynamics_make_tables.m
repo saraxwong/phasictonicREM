@@ -14,8 +14,9 @@ end
 
 participants_uni = unique(participants);
 
-
 load('/parallel_scratch/nemo/AFdata/sprint_220125/allsub_dynamics/sprint_allsub_aperiodic_dynamics_16-Dec-2025.mat');
+
+load('/parallel_scratch/nemo/AFdata/sprint_220125/allsub_dynamics/sprint_allsub_swa_spindles_dynamics_29-Jun-2026.mat');
 
 load('/parallel_scratch/nemo/AFdata/eBOSC/abu_den_amp_freq/histograms_dynamics/eBOSC_allsub_not_individualized_2_6_12_dynamics01-Dec-2025.mat','IAPF*','ITPF*','ISPF*','alpha*','theta*','spindles*');
 
@@ -142,6 +143,17 @@ for s = 1:36
             amp_spindles_cycles_tonic = squeeze(spindles_tonic_amp_cyc_allsub(s,night,ch,:)); 
             snr_spindles_cycles_tonic = squeeze(spindles_tonic_snr_cyc_allsub(s,night,ch,:));
             
+            swa_cycles_nrem = squeeze(swa_cyc_nrem_all(s,night,ch,:));
+            spindle_power_cycles_nrem = squeeze(spindle_power_cyc_nrem_all(s,night,ch,:));
+
+            swa_cycles_rem = squeeze(swa_cyc_rem_all(s,night,ch,:));
+            spindle_power_cycles_rem = squeeze(spindle_power_cyc_rem_all(s,night,ch,:));
+            
+            swa_cycles_phasic = squeeze(swa_cyc_phasic_all(s,night,ch,:));
+            spindle_power_cycles_phasic = squeeze(spindle_power_cyc_phasic_all(s,night,ch,:));
+            
+            swa_cycles_tonic = squeeze(swa_cyc_tonic_all(s,night,ch,:));
+            spindle_power_cycles_tonic = squeeze(spindle_power_cyc_tonic_all(s,night,ch,:));
             
             nonan_cycles = find(~isnan(exponent_1_30_cyc_nrem_allcycles) == 1);
             
@@ -233,7 +245,7 @@ for s = 1:36
             m_offset_30_45_cyc_phasic = nanmean(offset_30_45_cyc_phasic_allcycles);         
             m_offset_1_30_cyc_tonic = nanmean(offset_1_30_cyc_tonic_allcycles);
             m_offset_30_45_cyc_tonic = nanmean(offset_30_45_cyc_tonic_allcycles); 
-            
+                        
           
             if last_cycle > 1
                end_cyc = last_cycle-1; 
@@ -293,6 +305,8 @@ for s = 1:36
                abu_spindles_between_rem(cyc) = abu_spindles_cycles_rem(cyc);
                amp_spindles_between_rem(cyc) = amp_spindles_cycles_rem(cyc);
                snr_spindles_between_rem(cyc) = snr_spindles_cycles_rem(cyc);
+               swa_between_rem(cyc) = swa_cycles_rem(cyc);
+               spindle_power_between_rem(cyc) = spindle_power_cycles_rem(cyc);
                
                IAPF_between_phasic(cyc) = IAPF_allcycles_phasic(cyc); 
                ITPF_between_phasic(cyc) = ITPF_allcycles_phasic(cyc); 
@@ -309,6 +323,8 @@ for s = 1:36
                abu_spindles_between_phasic(cyc) = abu_spindles_cycles_phasic(cyc);
                amp_spindles_between_phasic(cyc) = amp_spindles_cycles_phasic(cyc);
                snr_spindles_between_phasic(cyc) = snr_spindles_cycles_phasic(cyc);
+               swa_between_phasic(cyc) = swa_cycles_phasic(cyc);
+               spindle_power_between_phasic(cyc) = spindle_power_cycles_phasic(cyc);
                
                IAPF_between_tonic(cyc) = IAPF_allcycles_tonic(cyc); 
                ITPF_between_tonic(cyc) = ITPF_allcycles_tonic(cyc); 
@@ -325,7 +341,8 @@ for s = 1:36
                abu_spindles_between_tonic(cyc) = abu_spindles_cycles_tonic(cyc);
                amp_spindles_between_tonic(cyc) = amp_spindles_cycles_tonic(cyc);
                snr_spindles_between_tonic(cyc) = snr_spindles_cycles_tonic(cyc);
-               
+               swa_between_tonic(cyc) = swa_cycles_tonic(cyc);
+               spindle_power_between_tonic(cyc) = spindle_power_cycles_tonic(cyc);     
                 
             end
             
@@ -348,6 +365,14 @@ for s = 1:36
             m_exponent_30_45_between_tonic = nanmean(exponent_30_45_between_tonic);
             m_offset_1_30_between_tonic = nanmean(offset_1_30_between_tonic);
             m_offset_30_45_between_tonic = nanmean(offset_30_45_between_tonic);
+            
+            m_swa_between_rem = nanmean(swa_between_rem);
+            m_swa_between_phasic = nanmean(swa_between_phasic);
+            m_swa_between_tonic = nanmean(swa_between_tonic);
+            
+            m_spindle_power_between_rem = nanmean(spindle_power_between_rem);
+            m_spindle_power_between_phasic = nanmean(spindle_power_between_phasic);
+            m_spindle_power_between_tonic = nanmean(spindle_power_between_tonic);
             
             %%
             aperiodic_dyn_table = table(sub,ni,con,channel,...
@@ -390,7 +415,10 @@ for s = 1:36
             m_exponent_1_30_between_phasic, m_exponent_30_45_between_phasic,...
             m_offset_1_30_between_phasic, m_offset_30_45_between_phasic,...
             m_exponent_1_30_between_tonic, m_exponent_30_45_between_tonic,...
-            m_offset_1_30_between_tonic, m_offset_30_45_between_tonic);
+            m_offset_1_30_between_tonic, m_offset_30_45_between_tonic,...
+            m_swa_between_rem,m_spindle_power_between_rem,...
+            m_swa_between_phasic,m_spindle_power_between_phasic,...
+            m_swa_between_tonic,m_spindle_power_between_tonic);
         
         
             aperiodic_osc_dyn_triplet_table = table(sub_tri, ni_tri, con_tri, channel_tri,cycles',...
@@ -417,7 +445,9 @@ for s = 1:36
             IAPF_between_tonic',ITPF_between_tonic',ISPF_between_tonic',...
             den_alpha_between_tonic',abu_alpha_between_tonic',amp_alpha_between_tonic',snr_alpha_between_tonic',...
             den_theta_between_tonic',abu_theta_between_tonic',amp_theta_between_tonic',snr_theta_between_tonic',...
-            den_spindles_between_tonic',abu_spindles_between_tonic',amp_spindles_between_tonic',snr_spindles_between_tonic');
+            den_spindles_between_tonic',abu_spindles_between_tonic',amp_spindles_between_tonic',snr_spindles_between_tonic',...
+            swa_between_rem',swa_between_phasic',swa_between_tonic',...
+            spindle_power_between_rem',spindle_power_between_phasic',spindle_power_between_tonic');
         
         
             aperiodic_dyn_table_allcyc = table(sub_cyc,ni_cyc,con_cyc,channel_cyc,cycle',...
@@ -428,7 +458,9 @@ for s = 1:36
                 exponent_1_30_cyc_phasic_allcycles,exponent_30_45_cyc_phasic_allcycles,...
                 offset_1_30_cyc_phasic_allcycles,offset_30_45_cyc_phasic_allcycles,...
                 exponent_1_30_cyc_tonic_allcycles,exponent_30_45_cyc_tonic_allcycles,...
-                offset_1_30_cyc_tonic_allcycles,offset_30_45_cyc_tonic_allcycles);
+                offset_1_30_cyc_tonic_allcycles,offset_30_45_cyc_tonic_allcycles,...
+                swa_cycles_nrem,swa_cycles_rem,swa_cycles_phasic,swa_cycles_tonic,...
+                spindle_power_cycles_nrem,spindle_power_cycles_rem,spindle_power_cycles_phasic,spindle_power_cycles_tonic);
               
 
            
@@ -437,11 +469,14 @@ for s = 1:36
             aperiodic_dyn_table_allcyc_all = vertcat(aperiodic_dyn_table_allcyc_all,aperiodic_dyn_table_allcyc);
 
             
-            clear exponent*allcycles* offset*allcycles
+            clear exponent*allcycles* offset*allcycles 
             clear last_cycle cycles aperiodic_dyn_table aperiodic_osc_dyn_triplet_table sub* ni ni_tri con* channel*
             clear exponent*firstlast_diff offset*firstlast_diff exponent*first offset*first exponent*last offset*last m_exponent* m_offset*
             clear exponent*pre* offset*pre* exponent*post* offset*post* exponent*prepost_diff offset*prepost_diff exponent*_between* offset*_between*
             clear IAPF*between* ITPF*between* ISPF*between* den*between* abu*between* amp*between* snr*between*
+            clear m_swa* m_spindle_power*
+            clear swa*between* spindle_power*between*
+            clear swa_cycles* spindle_power_cycles*
 
         end
     end
@@ -525,7 +560,12 @@ aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{71} = 'den_spindles
 aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{72} = 'abu_spindles_between_tonic';
 aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{73} = 'amp_spindles_between_tonic';
 aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{74} = 'snr_spindles_between_tonic';
-
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{75} = 'swa_between_rem';
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{76} = 'swa_between_phasic';
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{77} = 'swa_between_tonic';
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{78} = 'spindle_power_between_rem';
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{79} = 'spindle_power_between_phasic';
+aperiodic_osc_dyn_triplet_table_all.Properties.VariableNames{80} = 'spindle_power_between_tonic';
 
 aperiodic_dyn_table_allcyc_all.Properties.VariableNames{1} = 'sub';
 aperiodic_dyn_table_allcyc_all.Properties.VariableNames{2} = 'night';

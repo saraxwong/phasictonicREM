@@ -2,8 +2,10 @@ clear all;
 close all;
 
 addpath(genpath('/users/nemo/software/Henry/useful_functions')); % contains linspecer function, circular statistics toolbox functions, echt function, shadedErrorBar function, see README on where to find this
+addpath(genpath('/users/nemo/software/eeglab')); % eeglab toolbox, see README on where to find this
 
-load('/parallel_scratch/nemo/AFdata/sprint_220125/allsub/sprint_allsub_16-Dec-2025.mat');
+% load('/parallel_scratch/nemo/AFdata/sprint_220125/allsub/sprint_allsub_16-Dec-2025.mat');
+load('/parallel_scratch/nemo/AFdata/sprint_220125/allsub/allsub/sprint_allsub_13-Jul-2026.mat');
 
 Savefolder = '/parallel_scratch/nemo/AFdata/Figures/sprint';
 
@@ -20,74 +22,93 @@ f3 = 1:1:45;
 
 %%
 
-m_power_spectrum_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_power_spectrum_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-log_power_spectrum_1_45_ratio_allsub = log_power_spectrum_1_45_phasic_allsub-log_power_spectrum_1_45_tonic_allsub;
+log_power_spectrum_1_45_ratio_allsub = sprint_allsub.log_power_spectrum_1_45_phasic_allsub-sprint_allsub.log_power_spectrum_1_45_tonic_allsub;
 m_power_spectrum_1_45_ratio_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_1_45_ratio_allsub(s,n,ch,:),2),3)),1)));
 sem_power_spectrum_1_45_ratio_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_1_45_ratio_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_power_spectrum_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_power_spectrum_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_power_spectrum_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_power_spectrum_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_power_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_power_spectrum_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_power_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-
-m_foofed_spectrum_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-m_foofed_spectrum_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-m_foofed_spectrum_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-m_foofed_spectrum_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-m_foofed_spectrum_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
-
-m_foofed_spectrum_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_foofed_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_foofed_spectrum_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_foofed_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_power_spectrum_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_power_spectrum_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_power_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
 
-m_ap_fit_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_ap_fit_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_ap_fit_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_ap_fit_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_ap_fit_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
-m_ap_fit_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(log_ap_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
-sem_ap_fit_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(log_ap_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+m_foofed_spectrum_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_foofed_spectrum_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_foofed_spectrum_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+
+m_ap_fit_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_ap_fit_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_ap_fit_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_ap_fit_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_ap_fit_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_ap_fit_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_ap_fit_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_ap_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+
+m_peak_fit_1_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_1_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_peak_fit_1_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_1_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_peak_fit_1_30_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_1_30_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_30_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_peak_fit_1_30_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_1_30_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_1_30_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_peak_fit_30_45_phasic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_30_45_phasic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_30_45_phasic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
+
+m_peak_fit_30_45_tonic_allsub = (squeeze(nanmean(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)));
+sem_peak_fit_30_45_tonic_allsub = (squeeze(nanstd(10.^(nanmean(nanmean(sprint_allsub.log_peak_fit_30_45_tonic_allsub(s,n,ch,:),2),3)),1)))./sqrt(length(s));
 
 
 %% Compare phasic/tonic using a lme
 
 
-for b = 1:size(log_power_spectrum_1_45_phasic_allsub,4)
+for b = 1:size(sprint_allsub.log_power_spectrum_1_45_phasic_allsub,4)
    
-    power_phasic_bin = squeeze(log_power_spectrum_1_45_phasic_allsub(:,:,:,b));
-    power_tonic_bin = squeeze(log_power_spectrum_1_45_tonic_allsub(:,:,:,b));
+    power_phasic_bin = squeeze(sprint_allsub.log_power_spectrum_1_45_phasic_allsub(:,:,:,b));
+    power_tonic_bin = squeeze(sprint_allsub.log_power_spectrum_1_45_tonic_allsub(:,:,:,b));
   
     table_bin_night_ch_all = [];
     
@@ -116,6 +137,9 @@ for b = 1:size(log_power_spectrum_1_45_phasic_allsub,4)
    p_night(b) = stats.pValue(2);
    p_channel(b) = stats.pValue(3);
    p_substage(b) = stats.pValue(4);
+   f_substage(b) = stats.FStat(4);
+   df1_substage(b) = stats.DF1(4); 
+   df2_substage(b) = stats.DF2(4);
 
     
 end
@@ -143,7 +167,7 @@ set(groot,'defaultAxesXTickLabelRotationMode','manual')
 xlim([1 45])
 xticks(0:5:45);
 
-saveas(fig,[Savefolder,filesep,'Sprint_illustration_logy_1_45Hz_allch.svg']);
+% saveas(fig,[Savefolder,filesep,'Sprint_illustration_logy_1_45Hz_allch.svg']);
 
 %% 1-45 Hz ratio
 
@@ -152,10 +176,20 @@ colors = linspecer(4)
 fig = figure('Renderer','painters','units','normalized','outerposition',[0 0 1 1])    
 fig.WindowState = 'maximized';
 
+p_substage_fdr = fdr(p_substage);
+
 subplot(1,3,1)
 shadedErrorBar(f3, m_power_spectrum_1_45_ratio_allsub,sem_power_spectrum_1_45_ratio_allsub,'lineProps',{'-','Color', [0.4 0.4 0.4],'LineWidth',2},'patchSaturation',.1);
 hold on
-sig_bins = find(p_substage <= 0.05);
+sig_bins = find(p_substage_fdr <= 0.05);
+f_sig_bins = f_substage(sig_bins);
+min_f_sig_bins = min(f_sig_bins)
+max_f_sig_bins = max(f_sig_bins)
+
+p_sig_bins = p_substage_fdr(sig_bins);
+min_p_sig_bins = min(p_sig_bins)
+max_p_sig_bins = max(p_sig_bins)
+
 diff_sig_bins = diff(sig_bins);
 end_sig_bins = find(diff_sig_bins > 1);
 sig_bins1 = sig_bins(1:end_sig_bins(1));
@@ -206,7 +240,7 @@ set(groot,'defaultAxesXTickLabelRotationMode','manual')
 xlim([1 30])
 xticks(0:5:30);
 
-saveas(fig,[Savefolder,filesep,'Sprint_illustration_loglog_1_30Hz_allch.svg']);
+% saveas(fig,[Savefolder,filesep,'Sprint_illustration_loglog_1_30Hz_allch.svg']);
 
 %% 30-45 Hz loglog
 
@@ -233,8 +267,35 @@ set(groot,'defaultAxesXTickLabelRotationMode','manual')
 xlim([30 45])
 xticks(0:5:45);
 
-saveas(fig,[Savefolder,filesep,'Sprint_illustration_loglog_30_45Hz_allch.svg']);
+% saveas(fig,[Savefolder,filesep,'Sprint_illustration_loglog_30_45Hz_allch.svg']);
 
 
 
+%% 1-30 Hz peak_fit
 
+% colors = linspecer(4)
+% 
+% fig = figure('Renderer','painters','units','normalized','outerposition',[0 0 1 1])    
+% fig.WindowState = 'maximized';
+% 
+% subplot(1,3,2)
+% shadedErrorBar(f1, m_peak_fit_1_30_phasic_allsub,sem_peak_fit_1_30_phasic_allsub,'lineProps',{'-','Color',[0 0.4471 0.6980 0.7],'LineWidth',2},'patchSaturation',.1);
+% % hold on
+% % plot(f1,m_peak_fit_1_30_phasic_allsub,'--','Color',[0 0.2471 0.4980],'LineWidth',2)
+% hold on
+% ff1 = 1;
+% shadedErrorBar(f1, m_peak_fit_1_30_tonic_allsub,sem_peak_fit_1_30_tonic_allsub,'lineProps',{'-','Color',[0.8353 0.3686 0 0.7],'LineWidth',2},'patchSaturation',.1);
+% % hold on
+% % plot(f1,m_peak_fit_1_30_tonic_allsub,'--','Color',[0.6392 0.2941 0.0314],'LineWidth',2)
+% hold on
+% xlabel('Frequency (Hz)');
+% ylabel('Power (\muV^2)');
+% % set(gca,'Fontsize',10,'TickDir','out','LineWidth',2);
+% set(gca,'Fontsize',10,'TickDir','out','LineWidth',2,'YScale','log');
+% box off
+% set(groot,'defaultAxesXTickLabelRotationMode','manual')
+% xlim([1 20])
+% xticks(0:2:20);
+% legend({'phasic' 'tonic'})
+% 
+% 

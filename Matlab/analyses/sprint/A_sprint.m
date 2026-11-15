@@ -1,11 +1,11 @@
 % https://neuroimage.usc.edu/brainstorm/Tutorials/SPRiNT
 
-% function A_sprint(s)
-% 
-% try
+function A_sprint(s)
 
-clear all;
-close all;
+try
+
+% clear all;
+% close all;
 
 addpath(genpath('/users/nemo/software/eeglab'));
 addpath(genpath('/users/nemo/software/sprint'));
@@ -18,12 +18,12 @@ aICA_file = dir([Folderpath,'*_aICA.set']);
 goodREM_folder = '/parallel_scratch/nemo/AFdata/goodREM2/';
 goodREM_file = dir([goodREM_folder,'*_goodREM.mat']);
 
-Savefolder = '/parallel_scratch/nemo/AFdata/sprint_220125';
+Savefolder = '/parallel_scratch/nemo/AFdata/sprint_160725';
 
 %%
 
-% for s = 1:length(sub_Folderpath)
-s = 480
+% for s = 1 %1:length(aICA_file)
+% s = 1
         
 EEG = pop_loadset('filename',[aICA_file(s).name],'filepath',[Folderpath]);
     
@@ -58,6 +58,12 @@ error_30_45_allep = NaN(length(phasic_ep),8);
 r_squared_30_45_allep = NaN(length(phasic_ep),8);
 error_1_45_allep = NaN(length(phasic_ep),8);
 r_squared_1_45_allep = NaN(length(phasic_ep),8);
+error_ap_fit_1_30_allep = NaN(length(phasic_ep),8);
+r_squared_ap_fit_1_30_allep = NaN(length(phasic_ep),8);
+error_ap_fit_30_45_allep = NaN(length(phasic_ep),8);
+r_squared_ap_fit_30_45_allep = NaN(length(phasic_ep),8);
+error_ap_fit_1_45_allep = NaN(length(phasic_ep),8);
+r_squared_ap_fit_1_45_allep = NaN(length(phasic_ep),8);
 
 %% SPRiNT (without Brainstorm), 1-30 Hz 
 
@@ -199,8 +205,8 @@ s_data = SPRiNT_specparam_matlab(TF,outputStruct.freqs,outputStruct.opts,ts);
 % semilogy(s_data.Freqs,s_data.SPRiNT.channel.data(ep).power_spectrum,'--','Color','r','LineWidth',1)
 % hold on
 % semilogy(s_data.Freqs,s_data.SPRiNT.channel.data(ep).peak_fit,'--','Color','r','LineWidth',1)
-
-
+% 
+% 
 % for ep = 1:length(s_data.SPRiNT.channel.data)
 %     
 % foofed_spectrum(ep+2,:) = s_data.SPRiNT.channel.data(ep).fooofed_spectrum;
@@ -214,7 +220,7 @@ s_data = SPRiNT_specparam_matlab(TF,outputStruct.freqs,outputStruct.opts,ts);
 % ap_fit(1:2,:) = NaN;
 % power_spectrum(1:2,:) = NaN;
 % peak_fit(1:2,:) = NaN;
-
+% 
 % rem_foofed_spectrum = foofed_spectrum(rem_ndx,:);
 % nrem_foofed_spectrum = foofed_spectrum(nrem_ndx,:);
 % 
@@ -238,7 +244,7 @@ s_data = SPRiNT_specparam_matlab(TF,outputStruct.freqs,outputStruct.opts,ts);
 % 
 % m_rem_peak_fit = nanmean(rem_peak_fit,1);
 % m_nrem_peak_fit = nanmean(nrem_peak_fit,1);
-
+% 
 % 
 % semilogy(s_data.Freqs,m_rem_foofed_spectrum,'-','Color','r','LineWidth',5)
 % hold on
@@ -275,8 +281,8 @@ s_data2 = SPRiNT_specparam_matlab(TF2,outputStruct2.freqs,outputStruct2.opts,ts2
 % semilogy(s_data2.Freqs,s_data2.SPRiNT.channel.data(ep).power_spectrum,'--','Color','r','LineWidth',1)
 % hold on
 % semilogy(s_data2.Freqs,s_data2.SPRiNT.channel.data(ep).peak_fit,'--','Color','r','LineWidth',1)
-% 
-% 
+
+
 % for ep = 1:length(s_data2.SPRiNT.channel.data)
 %     
 % foofed_spectrum(ep+2,:) = s_data2.SPRiNT.channel.data(ep).fooofed_spectrum;
@@ -354,7 +360,17 @@ f1 = s_data.Freqs;
            peak_fit_ep = s_data.SPRiNT.channel.data(ep).peak_fit;
            error_ep = s_data.SPRiNT.channel.data(ep).error;
            r_squared_ep = s_data.SPRiNT.channel.data(ep).r_squared;
-
+           
+           % Calculate error to ap_fit
+           if ~isnan(power_spectrum_ep)
+              MSE_ap_fit_ep = sum((log10(power_spectrum_ep) - log10(ap_fit_ep)).^2)/length(ap_fit_ep);
+              rsq_tmp = corrcoef(log10(power_spectrum_ep),log10(ap_fit_ep)).^2;
+              r_squared_ap_fit_ep = rsq_tmp(2,1);
+           else
+              MSE_ap_fit_ep = NaN;
+              r_squared_ap_fit_ep = NaN;
+           end
+           
            if ~isnan(aperiodic_params_ep)
                 offset_1_30_allep(mini_ep,ch) = aperiodic_params_ep(1);
                 exponent_1_30_allep(mini_ep,ch) = aperiodic_params_ep(2);
@@ -363,7 +379,9 @@ f1 = s_data.Freqs;
                 power_spectrum_1_30_allep(mini_ep,ch,:) = power_spectrum_ep;
                 peak_fit_1_30_allep(mini_ep,ch,:) = peak_fit_ep; 
                 error_1_30_allep(mini_ep,ch) = error_ep;
-                r_squared_1_30_allep(mini_ep,ch) = r_squared_ep;           
+                r_squared_1_30_allep(mini_ep,ch) = r_squared_ep; 
+                error_ap_fit_1_30_allep(mini_ep,ch) = MSE_ap_fit_ep;
+                r_squared_ap_fit_1_30_allep(mini_ep,ch) = r_squared_ap_fit_ep;  
            end
 
            peak_params_ep = peak_params{ep};
@@ -402,7 +420,7 @@ f1 = s_data.Freqs;
 
             clear frequency amplitude st_dev nep stage nmini_ep substage chan waves_ep aperiodic_params_ep peak_params_ep
 
-            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep
+            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep MSE_ap_fit_ep r_squared_ap_fit_ep
 
        end
 
@@ -426,7 +444,18 @@ f2 = s_data2.Freqs;
            peak_fit_ep = s_data2.SPRiNT.channel.data(ep).peak_fit;
            error_ep = s_data2.SPRiNT.channel.data(ep).error;
            r_squared_ep = s_data2.SPRiNT.channel.data(ep).r_squared;
-
+           
+           
+%             % Calculate error to ap_fit
+           if ~isnan(power_spectrum_ep)
+              MSE_ap_fit_ep = sum((log10(power_spectrum_ep) - log10(ap_fit_ep)).^2)/length(ap_fit_ep);
+              rsq_tmp = corrcoef(log10(power_spectrum_ep),log10(ap_fit_ep)).^2;
+              r_squared_ap_fit_ep = rsq_tmp(2,1);
+           else
+              MSE_ap_fit_ep = NaN;
+              r_squared_ap_fit_ep = NaN;
+           end
+           
            if ~isnan(aperiodic_params_ep)
                 offset_30_45_allep(mini_ep,ch) = aperiodic_params_ep(1);
                 exponent_30_45_allep(mini_ep,ch) = aperiodic_params_ep(2);
@@ -435,9 +464,11 @@ f2 = s_data2.Freqs;
                 power_spectrum_30_45_allep(mini_ep,ch,:) = power_spectrum_ep;
                 peak_fit_30_45_allep(mini_ep,ch,:) = peak_fit_ep; 
                 error_30_45_allep(mini_ep,ch) = error_ep;
-                r_squared_30_45_allep(mini_ep,ch) = r_squared_ep;                 
-                
+                r_squared_30_45_allep(mini_ep,ch) = r_squared_ep; 
+                error_ap_fit_30_45_allep(mini_ep,ch) = MSE_ap_fit_ep;
+                r_squared_ap_fit_30_45_allep(mini_ep,ch) = r_squared_ap_fit_ep;  
            end
+           
 
            peak_params_ep = peak_params2{ep};
 
@@ -474,7 +505,7 @@ f2 = s_data2.Freqs;
 
             clear frequency amplitude st_dev nep stage nmini_ep substage chan waves_ep2 aperiodic_params_ep peak_params_ep
 
-            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep
+            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep MSE_ap_fit_ep r_squared_ap_fit_ep
 
 
        end
@@ -502,6 +533,17 @@ f3 = s_data3.Freqs;
            error_ep = s_data3.SPRiNT.channel.data(ep).error;
            r_squared_ep = s_data3.SPRiNT.channel.data(ep).r_squared;
 
+          
+%            % Calculate error to ap_fit
+           if ~isnan(power_spectrum_ep)
+              MSE_ap_fit_ep = sum((log10(power_spectrum_ep) - log10(ap_fit_ep)).^2)/length(ap_fit_ep);
+              rsq_tmp = corrcoef(log10(power_spectrum_ep),log10(ap_fit_ep)).^2;
+              r_squared_ap_fit_ep = rsq_tmp(2,1);
+           else
+              MSE_ap_fit_ep = NaN;
+              r_squared_ap_fit_ep = NaN;
+           end
+           
            if ~isnan(aperiodic_params_ep)
                 offset_1_45_allep(mini_ep,ch) = aperiodic_params_ep(1);
                 exponent_1_45_allep(mini_ep,ch) = aperiodic_params_ep(2);
@@ -511,8 +553,11 @@ f3 = s_data3.Freqs;
                 peak_fit_1_45_allep(mini_ep,ch,:) = peak_fit_ep; 
                 error_1_45_allep(mini_ep,ch) = error_ep;
                 r_squared_1_45_allep(mini_ep,ch) = r_squared_ep; 
+                error_ap_fit_1_45_allep(mini_ep,ch) = MSE_ap_fit_ep;
+                r_squared_ap_fit_1_45_allep(mini_ep,ch) = r_squared_ap_fit_ep;  
            end
-
+           
+           
            peak_params_ep = peak_params3{ep};
 
                 if peak_params_ep(1) ~= 0 & ~isnan(peak_params_ep(1))
@@ -548,7 +593,7 @@ f3 = s_data3.Freqs;
 
             clear frequency amplitude st_dev nep stage nmini_ep substage chan waves_ep3 aperiodic_params_ep peak_params_ep
 
-            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep
+            clear foofed_spectrum_ep ap_fit_ep power_spectrum_ep peak_fit_ep error_ep r_squared_ep MSE_ap_fit_ep r_squared_ap_fit_ep
 
 
        end
@@ -567,8 +612,10 @@ end
 save([Savefolder,filesep,aICA_file(s).name(1:end-9),'_sprint_waves.mat'],'waves_allepch','waves_allepch2','offset_1_30_allep','exponent_1_30_allep','foofed_spectrum_1_30_allep','ap_fit_1_30_allep','power_spectrum_1_30_allep','peak_fit_1_30_allep',...
 'offset_30_45_allep','exponent_30_45_allep','foofed_spectrum_30_45_allep','ap_fit_30_45_allep','power_spectrum_30_45_allep','peak_fit_30_45_allep',...
 'offset_1_45_allep','exponent_1_45_allep','foofed_spectrum_1_45_allep','ap_fit_1_45_allep','power_spectrum_1_45_allep','peak_fit_1_45_allep',...
-'error_1_30_allep', 'r_squared_1_30_allep','error_30_45_allep', 'r_squared_30_45_allep','error_1_45_allep', 'r_squared_1_45_allep',...
+'error_1_30_allep', 'r_squared_1_30_allep','error_ap_fit_1_30_allep', 'r_squared_ap_fit_1_30_allep','error_30_45_allep', 'r_squared_30_45_allep',...
+'error_ap_fit_30_45_allep', 'r_squared_ap_fit_30_45_allep','error_1_45_allep', 'r_squared_1_45_allep','error_ap_fit_1_45_allep', 'r_squared_ap_fit_1_45_allep',...
 'f1','f2','f3','-v7.3')
+
 
 
 clear waves_allepch waves_allepch3 abundance_f1 abundance_f2 abundance_f3 offset_1_30_allep exponent_1_30_allep offset_30_45_allep exponent_30_45_allep offset_1_45_allep exponent_1_45_allep f1 f2 f3
@@ -576,20 +623,20 @@ clear waves_allepch waves_allepch3 abundance_f1 abundance_f2 abundance_f3 offset
 clear foofed_spectrum_1_30_allep ap_fit_1_30_allep power_spectrum_1_30_allep peak_fit_1_30_allep
 clear foofed_spectrum_30_45_allep ap_fit_30_45_allep power_spectrum_30_45_allep peak_fit_30_45_allep
 clear foofed_spectrum_1_45_allep ap_fit_1_45_allep power_spectrum_1_45_allep peak_fit_1_45_allep
-clear error_1_30_allep r_squared_1_30_allep error_30_45_allep r_squared_30_45_allep error_1_45_allep r_squared_1_45_allep
+clear error_1_30_allep r_squared_1_30_allep error_ap_fit_1_30_allep r_squared_ap_fit_1_30_allep error_30_45_allep r_squared_30_45_allep error_ap_fit_30_45_allep r_squared_ap_fit_30_45_allep error_1_45_allep r_squared_1_45_allep error_ap_fit_1_45_allep r_squared_ap_fit_1_45_allep
 
 
 % end
 
 
-% display('the end');
-% 
-% catch exception
-%     display(exception.message)
-%     display(exception.identifier)
-%     error()
-% end
-% 
-% 
-% end
+display('the end');
+
+catch exception
+    display(exception.message)
+    display(exception.identifier)
+    error()
+end
+
+
+end
 
