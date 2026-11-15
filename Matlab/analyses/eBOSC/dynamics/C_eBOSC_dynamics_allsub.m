@@ -2,12 +2,17 @@
 clear all;
 close all;
 
-Folderpath = '/parallel_scratch/nemo/AFdata/eBOSC/abu_den_amp_freq/histograms_dynamics/indsub';
+Folderpath = '/parallel_scratch/nemo/AFdata/eBOSC/first_submission/abu_den_amp_freq/histograms_dynamics/indsub';
 dir_Folderpath = dir([Folderpath,filesep,'AFOSR*']);
 
 load('/users/nemo/projects/Airforce/paper/preprocessing/EEG_template_AF_10ch.mat');
 
-Savefolder = '/parallel_scratch/nemo/AFdata/eBOSC/abu_den_amp_freq/histograms_dynamics';
+Savefolder = '/parallel_scratch/nemo/AFdata/eBOSC/first_submission/abu_den_amp_freq/histograms_dynamics';
+
+
+dur_nrem_cyc_min_allsub = NaN(36,18,8,10);
+dur_rem_cyc_min_allsub = NaN(36,18,8,10);
+prob_rem_cyc_min_allsub = NaN(36,18,8,10);
 
 %%
 
@@ -16,8 +21,14 @@ for s = 1:length(dir_Folderpath)
     
         load([Folderpath,filesep,dir_Folderpath(s).name]);
         
+        dur_nrem_cyc_min_all(dur_nrem_cyc_min_all == 0) = NaN;
+        dur_rem_cyc_min_all(dur_rem_cyc_min_all == 0) = NaN;
+        
         prob_phasic_cyc_allsub(s,:,:,:) = prob_phasic_cyc_all;
         dur_cyc_min_allsub(s,:,:,:) = dur_cyc_min_all;
+        dur_nrem_cyc_min_allsub(s,:,:,1:size(dur_nrem_cyc_min_all,3)) = dur_nrem_cyc_min_all;
+        dur_rem_cyc_min_allsub(s,:,:,1:size(dur_rem_cyc_min_all,3)) = dur_rem_cyc_min_all;
+        prob_rem_cyc_allsub(s,:,:,1:size(dur_rem_cyc_min_all,3)) = dur_rem_cyc_min_all./(dur_rem_cyc_min_all + dur_nrem_cyc_min_all)
         prob_phasic_cyc_quint_allsub(s,:,:,:,:) = prob_phasic_cyc_quint_all;
         dur_cyc_quint_min_allsub(s,:,:,:,:) = dur_cyc_quint_min_all;
         

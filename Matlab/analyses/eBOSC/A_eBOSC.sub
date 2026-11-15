@@ -1,12 +1,13 @@
 #!/bin/bash
 
 #SBATCH --job-name=array
-#SBATCH --array=480          #Array job indices/range for $SLURM_ARRAY_TASK_ID (can be incremented if desired)
-#SBATCH --time=72:00:00
+#SBATCH --array=1-36         #Array job indices/range for $SLURM_ARRAY_TASK_ID (can be incremented if desired)
+#SBATCH --time=12:00:00
 #SBATCH --partition=high_mem
-#SBATCH --ntasks=1
-#SBATCH --mem=4G
-#SBATCH --error=array_%A_%a.err   #Error file label by job number and index.
+#SBATCH --ntasks=4
+#SBATCH --mem=16G
+#SBATCH --error=/users/nemo/projects/Airforce/paper/eBOSC/jobfiles/array_%A_%a.err   #Error file label by job number and index.
+#SBATCH --output=/users/nemo/projects/Airforce/paper/eBOSC/jobfiles/array_%A.%a.out        #Output file for stdout (optional)
 
 
 # Print the task id.
