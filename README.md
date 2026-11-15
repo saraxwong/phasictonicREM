@@ -1,6 +1,6 @@
 # Overview
 
-This is the repository for the paper **“Insufficient sleep results in changes of periodic and aperiodic components of the EEG in tonic REM sleep that correlate with next-day mood and cognitive function”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
+This is the repository for the paper **“Insufficient sleep results in changes in periodic and aperiodic components of the EEG in tonic REM sleep that correlate with next-day mood and cognitive function”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
 
 Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1).
 
