@@ -14,7 +14,7 @@ AlignFolder = '/parallel_scratch/nemo/AFdata/alignment/';
 
 EEG_template_folder = '/users/nemo/projects/Airforce/paper/preprocessing';
 
-savefolder = '/parallel_scratch/nemo/AFdata/goodREM2'
+savefolder = '/parallel_scratch/nemo/AFdata/goodREM2';
 savefolder_allnight = '/parallel_scratch/nemo/AFdata/allnight/';
 
 %%
