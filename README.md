@@ -1,6 +1,6 @@
 # Overview
 
-This is the repository for the paper **“Tonic REM sleep EEG components predict better mood, cognition and reduce cortical excitability overnight”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
+This is the repository for the paper **“Insufficient sleep results in changes of periodic and aperiodic components of the EEG in tonic REM sleep that correlate with next-day mood and cognitive function”** by Sara Wong, Kiran K G Ravindran, Henry Hebron, Delia Lucarelli, June Lo, John Groeger, William Wisden, Ines R Violante, Derk-Jan Dijk, Valeria Jaramillo.
 
 Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1).
 
@@ -33,12 +33,16 @@ Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09
 
 *D_insert_REM_after_ICA*: put REM data after independent component removal back into whole night data
 
+*E_append_goodnrem*: append NREM artifact information to goodREM file
+
 
 ### 2.2 analyses
 
 #### 2.2.1 duration
 
-*duration_common_sleep_duration_vj*: calculate sleep stage durations for whole night and for common sleep duration across all participants and across SS/IS for each night
+*A_duration_common_sleep_duration_vj*: calculate sleep stage durations for whole night and for common sleep duration across all participants and across SS/IS for each night
+
+*B_duration_dynamics_vj.m*: calculate sleep stage durations for each 2-hour bin for each night
 
 #### 2.2.2 eBOSC
 
@@ -51,7 +55,14 @@ Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09
 *C_eBOSC_allsub*: combine all characteristics from all night and all participants into one file
 
 *D_eBOSC_make_tables*: make table of allnight wave characteristics
-Figure_eBOSC_histograms: make histogram plots showing oscillation frequency distribution for individual participants
+
+*Figure_eBOSC_histograms_indsub*: make histogram plots showing oscillation frequency distribution in REM for individual participants
+
+*Figure_eBOSC_histograms_allsub*: make histogram plots showing oscillation frequency distribution in phasic and tonic REM averaged across all participants
+
+*Figure_eBOSC_histograms_nrem_rem_wake_allsub*: make histogram plots showing oscillation frequency distribution in NREM, REM, and wakefulness averaged across all participants
+
+*Figure_schematic*: schematic figure showing how oscillations were assigned to phasic/tonic REM sleep
 
 **dynamics**
 
@@ -76,11 +87,15 @@ Figure_eBOSC_histograms: make histogram plots showing oscillation frequency dist
 
 *Figure_plot_spectra_allsub_base*: plot spectra comparing phasic and tonic for baseline nights
 
+*Figure_plot_spectra_allsub_base_nrem_rem_wake*: plot spectra comparing nrem, rem and wakefulness for baseline nights
+
 **dynamics**
 
 *B_sprint_dynamics*: calculate exponent, offset, and spectra for rem, phasic, tonic, nrem, and wake for each sleep cycle and quintile for all participants and nights
 
-*C_sprint_dynamics_make_tables*: make tables of exponent and offset for first cycle, last cycle, first-last difference, all night, pre-post triplet difference averaged, rem in-between averaged, for each sleep cycle, and for each sleep cycle and quintile
+*C_swa_spindle_power_dynamics*: calculate swa and spindle power for each sleep cycle for all participants and nights
+
+*D_sprint_dynamics_make_tables*: make tables of exponent and offset for first cycle, last cycle, first-last difference, all night, pre-post triplet difference averaged, rem in-between averaged, for each sleep cycle, and for each sleep cycle and quintile
 
 *Figure_plot_spectra_allsub_base_cycles*: plot spectra for nrem, phasic and tonic for first and last cycle for baseline nights
 
