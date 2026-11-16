@@ -4,7 +4,7 @@ This is the repository for the paper **“Insufficient sleep results in changes 
 
 Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09.704679v1).
 
-The final datasets that underlie the data summarized in the figures and results of the paper is under Section 3.2 Statistical analyses and Figures.
+The final processed datafiles and code that underlie the data summarized in the figures and results of the paper can be found in R/Statistical analyses and Figures (see section 3.2 below). 
 
 
 ## 1. Requirements and Installation
