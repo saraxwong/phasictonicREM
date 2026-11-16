@@ -111,11 +111,11 @@ Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09
 
 *Oscillatory*: configures processed eBOSC table to produce final dataframe for statistical analyses that includes total sleep time, order, averaged values for frontal, central, posterior & occipital channels and baseline values  
 
-*PANAS*: configures PANAS table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_27July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
+*PANAS*: configures PANAS table to include duration, aperiodic and oscillatory values (using script 1 arrange_data_for_PANAS_27July26) and to obtain values for frontal, central, posterior & occipital channels and baseline values (using script 2 PANAS_fortable_27July26)
 
-*PCA (cognition)*: extract principal components from behavioural data (using script PCA_BSESR_protocol), configures PCA table to include duration, aperiodic and oscillatory values (using script arrange_data_for_PANAS_27July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
+*PCA cognition*: extract principal components from behavioural data (using script PCA_BSESR_protocol), configures PCA table which include duration, aperiodic and oscillatory values obtained from script arrange_data_for_PANAS_27July26, to include averaged values for frontal, central, posterior & occipital channels and baseline values (using PCAcogn_fortable_27July26)
 
-*Slope modulation*: configures processed overnight and NREM-REM-NREM triplets aperiodic component table to produce final dataframe for statistical analyses that includes total sleep time, order, phasic and tonic oscillatory component values (using script arrange_data_for_excitability_30July26), averaged values for frontal, central, posterior & occipital channels and baseline values  
+*Slope modulation*: configures processed overnight and NREM-REM-NREM triplets aperiodic component table to produce final dataframe for statistical analyses that includes total sleep time, order, phasic and tonic oscillatory component values (using script arrange_data_for_excitability_30July26) and to obtain averaged values for frontal, central, posterior & occipital channels and baseline values (using script 2 NREMslopechange_fortable_30July26)
 
 
 ### 3.2 Statistical analyses and Figures
@@ -124,7 +124,7 @@ Preprint can be found [here](https://www.biorxiv.org/content/10.64898/2026.02.09
 
 *Aperiodic*: statistical analyses for aperiodic components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across sufficient sleep (SS) and insufficient sleep (IS) for phasic and tonic; creates Fig2, Fig3, S4_Fig, S5_Fig. 
 
-*Oscillatory*: statistical analyses for oscillatory components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across SS and IS for phasic and tonic; creates Fig2, Fig3, S5_Fig, S6_Fig, S8_Fig, S9_Fig. 
+*Oscillatory*: statistical analyses for oscillatory components differences during baseline nights for wake, NREM and REM, phasic and tonic and changes across SS and IS for phasic and tonic; creates Fig2, Fig3, S6_Fig, S8_Fig, S9_Fig. 
 
 *PANAS*: statistical analyses for changes in PANAS positive and PANAS negative score for SS and IS, associations of duration, periodic and aperiodic components with PANAS positive and PANAS negative during baseline and during SS and IS nights; creates Fig4, S4_Table, S5_Table.   
 
